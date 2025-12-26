@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Home Dashboard - Wild Robot</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0fbd83",
+                        "background-light": "#ffffff",
+                        "background-dark": "#10221c",
+                        "surface-light": "#f6f8f7",
+                        "emerald-green": "#10b981",
+                        "slate-gray": "#94a3b8"
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                },
+            },
+        }
+    </script>
+<style>.no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }.no-scrollbar {
+            -ms-overflow-style: none;scrollbar-width: none;}
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-gray-800 antialiased pb-24">
+<header class="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm transition-colors duration-200">
+<div class="flex items-center justify-between px-4 py-4">
+<h1 class="text-[#0d1b17] dark:text-white text-2xl font-bold tracking-tight">Wild Robot</h1>
+<div class="relative">
+<button class="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-surface-light dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-[#0d1b17] dark:text-white" style="font-size: 28px;">notifications</span>
+<span class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-[#10221c]">
+                        3
+                    </span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex flex-col gap-6 w-full max-w-md mx-auto md:max-w-full">
+<section class="flex flex-col gap-3">
+<div class="px-4 flex items-center justify-between">
+<h2 class="text-[#0d1b17] dark:text-white text-lg font-bold">Today's Sessions</h2>
+<button class="text-sm font-medium text-gray-500 dark:text-gray-400">See all</button>
+</div>
+<div class="flex overflow-x-auto snap-x snap-mandatory gap-4 px-4 pb-4 no-scrollbar w-full">
+<div class="snap-center shrink-0 w-[85%] md:w-[360px] relative flex flex-col rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden group bg-white dark:bg-gray-900">
+<div class="h-40 w-full bg-gray-200 relative overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="Gymnastics gym floor with equipment and mats" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDbYd1cwFvbn0757u53MmBkh6tjtCmfOD8hlN1sumgVwQAWacw2ZzuKlZ2NYa2fwHri3HiZNHbNnBA7tP8mtxfRNZxrPk-HHpzuhMkrR1BwrLKSBqu-SAgvbzHg93KYzDItHgJdt7UScqaWlasig-2FLpgExtDc3q19Ji_B-9qgqgF_2GO9jwhYvlOvsSFiVNefV9QvszE1xxfzB1NMA9e5UKGnYqytOC3ViN32F_SVqrlgvunOPTWE2k1tNdDsmNMKIYZu1mLZx1VW");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+<div class="absolute top-3 left-3 flex items-center gap-2 bg-white/90 dark:bg-black/80 backdrop-blur px-2.5 py-1 rounded-full">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600"></span>
+</span>
+<span class="text-xs font-bold text-blue-900 dark:text-blue-100 uppercase tracking-wide">Live Now</span>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-3">
+<div>
+<h3 class="text-[#0d1b17] dark:text-white text-xl font-bold leading-tight">Elite Boys (Tilal)</h3>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">16:00 - 17:30 • Main Hall</p>
+</div>
+<button class="flex w-full items-center justify-center gap-2 rounded-xl h-12 bg-primary text-[#0d1b17] text-base font-bold shadow-[0_4px_14px_0_rgba(15,189,131,0.39)] hover:bg-[#0ca673] transition-all active:scale-[0.98]">
+<span>Enter Class</span>
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="snap-center shrink-0 w-[70%] md:w-[280px] flex flex-col rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 bg-surface-light dark:bg-gray-800 overflow-hidden">
+<div class="h-32 w-full bg-gray-200 relative">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Young gymnasts stretching on mats" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDC3TgE_JLIZYDfiQvfvDhz_ibyzFVSWwXDMcq_oPAmk0sDpVDG2fBtiy0deOs33IHs-0AcafL2yLGeDl5H6tnrF-SZIkLF_ekWLGzLCqCBAoaLLzndJ0ni1do0F-fVRHZeJTwkVOWbDkYZlvOaELbjgVI2zM8FE8wZOVhWU7b9PNAvUgofKYnCrkF2w-f97Xdvzf8ugu4UuLoYMxr_p1jk4HOuKY-5T-X44HuUsF0RAVQGoSJvUfXgMzj6F1PqpGPC3nt6CBQ6fZyz");'></div>
+</div>
+<div class="p-4 flex flex-col h-full justify-between gap-3">
+<div>
+<span class="text-primary text-xs font-bold uppercase tracking-wider">Upcoming</span>
+<h3 class="text-[#0d1b17] dark:text-white text-lg font-bold mt-1">Beginner Girls</h3>
+<p class="text-gray-500 dark:text-gray-400 text-sm">17:45 - 18:45</p>
+</div>
+<button class="w-full py-2 rounded-lg bg-white dark:bg-gray-700 text-[#0d1b17] dark:text-white text-sm font-semibold border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                            View Details
+                        </button>
+</div>
+</div>
+<div class="snap-center shrink-0 w-[70%] md:w-[280px] flex flex-col rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 bg-surface-light dark:bg-gray-800 overflow-hidden">
+<div class="h-32 w-full bg-gray-200 relative">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Abstract view of gym rings and ropes" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCgQQGEL6JNGzSWmxtXNVbalbMAzEPbX_9fxyWbeIT4_jxqgE6CLKUPo4IqDtB6Gh3Zjq5O0vVpUsfmR2B2K65Fd0MtAZoSqTr5hbgFgtOXI5Lte0pQWesxKyH4U_XAc4KcAHKhuv1xr9Q2_K9OTw8QIhqGACpE7GKKNftOKjfGUgfkOIC2xeUmBIj7RnF90KLepIc6Hgu4n7nj_tZkT_6Dg5T4GovdKZzJr-9k339-vQVV93d8-e9fp-g6nVEIrlwvV2SYvUFkgM8d");'></div>
+</div>
+<div class="p-4 flex flex-col h-full justify-between gap-3">
+<div>
+<span class="text-primary text-xs font-bold uppercase tracking-wider">Tomorrow</span>
+<h3 class="text-[#0d1b17] dark:text-white text-lg font-bold mt-1">Junior Advanced</h3>
+<p class="text-gray-500 dark:text-gray-400 text-sm">09:00 - 10:30</p>
+</div>
+<button class="w-full py-2 rounded-lg bg-white dark:bg-gray-700 text-[#0d1b17] dark:text-white text-sm font-semibold border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                            View Details
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<section class="flex flex-col px-4 pt-2">
+<h2 class="text-[#0d1b17] dark:text-white text-lg font-bold mb-4">Community Feed</h2>
+<div class="flex flex-col gap-4 pb-4">
+<article class="flex flex-col gap-3 p-4 rounded-xl bg-surface-light dark:bg-gray-800/50 border border-transparent dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-gray-300 bg-cover bg-center border-2 border-white dark:border-gray-700 shadow-sm" data-alt="Portrait of Sarah the gymnast" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBPWCNl2agTfV2H_ZhbsShcbP2H9DJZDSPQ9B8dNezfN88i6Fw_Cwj-ADsHqkKT3wUU5C71dtRAc0YHd4dRAO1AFFjSz3gvhxTIgg6Zf86Ig76WuQrXAMSbnGoIy46o3Zym-YeUSgE2BOldSwCIubPIb9izdrRc30x8YAr50dksJCa4gQAUOBzlzTBH_-v6J9OXDsdNkDoIj1Lh33iX7RIPEnlJ8IjgMOvlOfYjSt1lcl81Msvrwi0dDMSMwGQb4zYS8DJHGiXsF15I");'></div>
+<div>
+<p class="text-[#0d1b17] dark:text-white text-sm font-bold">Sarah J.</p>
+<p class="text-xs text-gray-500 dark:text-gray-400">2h ago</p>
+</div>
+</div>
+<div class="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide">
+                            Achievement
+                        </div>
+</div>
+<div>
+<p class="text-[#0d1b17] dark:text-gray-200 text-base font-medium leading-normal">
+                            Finally mastered the kip! 🤸‍♀️ It took 3 weeks of conditioning but we got there.
+                        </p>
+</div>
+<div class="flex items-center gap-4 mt-1">
+<button class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors group">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">favorite</span>
+<span class="text-xs font-medium">24</span>
+</button>
+<button class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+<span class="text-xs font-medium">3</span>
+</button>
+</div>
+</article>
+<article class="flex flex-col gap-3 p-4 rounded-xl bg-surface-light dark:bg-gray-800/50 border border-transparent dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center h-10 w-10 rounded-full bg-primary/20 text-primary border-2 border-white dark:border-gray-700 shadow-sm">
+<span class="material-symbols-outlined text-lg">trophy</span>
+</div>
+<div>
+<p class="text-[#0d1b17] dark:text-white text-sm font-bold">Wild Robot Coach</p>
+<p class="text-xs text-gray-500 dark:text-gray-400">5h ago</p>
+</div>
+</div>
+<div class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide">
+                            Challenge
+                        </div>
+</div>
+<div>
+<p class="text-[#0d1b17] dark:text-gray-200 text-base font-medium leading-normal">
+                            Weekly Handstand Challenge! ⏱️ Post your best time below.
+                        </p>
+<div class="mt-3 rounded-lg overflow-hidden h-32 w-full bg-gray-100 relative">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Gymnast doing a handstand on parallel bars" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBP-ulXigeFUeUluNhN5-35Uh_Bj9Xm6wXQFObiWqmcELOCH9gtKq3j4lMnnN0FABZ-frQe8x0HsAbBQ6uUEMMi-c3s8kD1N1oCS7cTixZPU96_g43lAdcnAygLVUI-jYw4b_Y7hbZCDPS_mqqGtL8oagf3jNrPLSkJ6lO-rJDAyPFnMpzHueh2yR8mC_zDJ_39XgkBqM-c5c1wtJPYf2vOrgfRYpYm40UsmPwjlFqxIEUCMdcmuHaa00HR3RdGztI3uac1_XZGoL1b");'></div>
+</div>
+</div>
+<div class="flex items-center gap-4 mt-1">
+<button class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+<span class="text-xs font-medium">86</span>
+</button>
+<button class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+<span class="text-xs font-medium">12</span>
+</button>
+</div>
+</article>
+<article class="flex flex-col gap-3 p-4 rounded-xl bg-surface-light dark:bg-gray-800/50 border border-transparent dark:border-gray-800 transition-colors">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-gray-300 bg-cover bg-center border-2 border-white dark:border-gray-700 shadow-sm" data-alt="Portrait of Alex the coach" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCl2x7pp2_vrkP3NRwA8kS8tVooxbTNjnvEIoVigOxt6ruz8ZRogAbZKQtWz-o7XTlsWCTW-xX5Ei9HxiT63qMTeGRSCDzI18vVYx1yGKEgIDS3VmsZ_pPxDi8T04C7AhE-6XvVFVD5AuZdOk7KFAso2QT4nf87du4_YM-52q50ziLEDxWpAxjjmer_kDj9qEIQY9Ky7kmLqamxP_2rXSCj3u49U5CKItwEFIe9GWWTw9R4cboJ2_pkqE3ypuZdXcV31AuVZD48BBoN");'></div>
+<div>
+<p class="text-[#0d1b17] dark:text-white text-sm font-bold">Alex M.</p>
+<p class="text-xs text-gray-500 dark:text-gray-400">Yesterday</p>
+</div>
+</div>
+<div class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide">
+                            Update
+                        </div>
+</div>
+<div>
+<p class="text-[#0d1b17] dark:text-gray-200 text-base font-medium leading-normal">
+                            New balance beams have arrived! We'll be setting them up for the afternoon session.
+                        </p>
+</div>
+<div class="flex items-center gap-4 mt-1">
+<button class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+<span class="text-xs font-medium">45</span>
+</button>
+</div>
+</article>
+</div>
+</section>
+</main>
+<nav class="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#10221c] border-t border-gray-100 dark:border-gray-800 z-50 h-[70px] pb-safe">
+<ul class="flex items-center justify-between max-w-md mx-auto h-full px-2">
+<li class="flex-1 h-full">
+<a class="flex flex-col items-center justify-center gap-1 text-[#10b981] w-full h-full" href="#">
+<span class="material-symbols-outlined text-[26px] [font-variation-settings:'FILL'_1]">home</span>
+<span class="text-[10px] font-medium">Home</span>
+</a>
+</li>
+<li class="flex-1 h-full">
+<a class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-[#10b981] transition-colors w-full h-full" href="#">
+<span class="material-symbols-outlined text-[26px]">calendar_today</span>
+<span class="text-[10px] font-medium">Schedule</span>
+</a>
+</li>
+<li class="flex-1 h-full">
+<a class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-[#10b981] transition-colors w-full h-full" href="#">
+<span class="material-symbols-outlined text-[26px]">groups</span>
+<span class="text-[10px] font-medium">Roster</span>
+</a>
+</li>
+<li class="flex-1 h-full">
+<a class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-[#10b981] transition-colors w-full h-full" href="#">
+<span class="material-symbols-outlined text-[26px]">chat_bubble</span>
+<span class="text-[10px] font-medium">Chat</span>
+</a>
+</li>
+<li class="flex-1 h-full">
+<a class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-[#10b981] transition-colors w-full h-full" href="#">
+<span class="material-symbols-outlined text-[26px]">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</li>
+</ul>
+</nav>
+<div class="hidden absolute top-16 right-4 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden">
+<div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+<h3 class="font-bold text-sm dark:text-white">Shift Logs</h3>
+</div>
+<div class="max-h-64 overflow-y-auto">
+<div class="px-4 py-3 border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700">
+<p class="text-xs font-bold text-primary mb-1">Admin added a shift</p>
+<p class="text-xs text-gray-500">2 mins ago</p>
+</div>
+<div class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700">
+<p class="text-xs font-bold text-red-500 mb-1">Session Canceled</p>
+<p class="text-xs text-gray-500">Junior Girls • 1 hr ago</p>
+</div>
+</div>
+</div>
+</body></html>

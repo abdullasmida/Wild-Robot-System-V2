@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Skill Evaluation - Variant 3</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f4d125",
+                        "primary-dark": "#dcb910",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#221f10",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#2d2a15",
+                        "text-main": "#1c190d",
+                        "text-main-dark": "#f0f0f0",
+                        "text-sub": "#9c8e49",
+                        "text-sub-dark": "#ccc29a"
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hiding for clean UI */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen relative pb-32">
+<!-- Top App Bar -->
+<header class="sticky top-0 z-30 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-sm px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-text-main dark:text-text-main-dark">arrow_back</span>
+</button>
+<h1 class="flex-1 text-center text-lg font-bold text-text-main dark:text-text-main-dark tracking-tight">
+            Evaluation: Sarah Jones
+        </h1>
+<div class="w-10 h-10"></div> <!-- Spacer for visual balance -->
+</header>
+<!-- Main Content -->
+<main class="flex flex-col gap-6 p-4">
+<!-- Profile Header -->
+<section class="flex flex-col items-center justify-center py-2">
+<div class="relative mb-4">
+<div class="w-24 h-24 rounded-full border-4 border-white dark:border-surface-dark shadow-lg overflow-hidden bg-gray-200" data-alt="Portrait of gymnast Sarah Jones smiling" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDnNkUbImYjMlk3yJYlA6ThoK4dHLsvgzINqYOzV1WpPud_X3YsKzwRrxmcS1HYozWf4Z_nsLtYz14ZSedpNbJq1AxIOLR7UjUslI4g75xJH5bsmMMO13OH7mUPQSVaBH8hfwU4JSjId_DhHm8qt3ARb9swqexUjKQDHRTvmk6q7gK-Bf626a6u_JrojVL0adKcuzXom4WzTHJUL7OIsReTLe0mRAz_hZEdbfs6JfwvlpHYLupDrC-f-6QCVrBWuUlyrFuqPvH4Ww'); background-size: cover; background-position: center;">
+</div>
+<div class="absolute -bottom-2 -right-2 bg-primary text-text-main text-xs font-bold px-2 py-1 rounded-full border-2 border-white dark:border-surface-dark">
+                    Lvl 5
+                </div>
+</div>
+<h2 class="text-2xl font-bold text-text-main dark:text-text-main-dark mb-1">Sarah Jones</h2>
+<p class="text-text-sub dark:text-text-sub-dark font-medium mb-4">Overall Progress: 82%</p>
+<!-- Progress Bar -->
+<div class="w-full max-w-xs h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 82%"></div>
+</div>
+</section>
+<!-- Skill Cards Area -->
+<div class="flex flex-col gap-4">
+<!-- Card 1: Vault (Expanded) -->
+<article class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+<div class="flex items-center justify-between p-4 bg-primary/10 cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary-dark dark:text-primary">
+<span class="material-symbols-outlined">sports_gymnastics</span>
+</div>
+<h3 class="text-lg font-bold text-text-main dark:text-text-main-dark">Vault</h3>
+</div>
+<span class="material-symbols-outlined text-text-main dark:text-text-main-dark transform rotate-180 transition-transform">expand_more</span>
+</div>
+<div class="flex flex-col divide-y divide-gray-100 dark:divide-gray-800">
+<!-- Skill Item -->
+<div class="p-4 flex flex-col gap-2">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="text-base font-semibold text-text-main dark:text-text-main-dark">Handspring</h4>
+<p class="text-sm text-text-sub dark:text-text-sub-dark mt-0.5">Technique needs improvement on landing.</p>
+</div>
+<span class="text-sm font-bold text-text-main dark:text-text-main-dark bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">3/5</span>
+</div>
+<!-- Stars -->
+<div class="flex gap-1 text-primary">
+<span class="material-symbols-outlined text-[20px] fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-[20px] fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-[20px] fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-[20px] text-gray-300 dark:text-gray-600">star</span>
+<span class="material-symbols-outlined text-[20px] text-gray-300 dark:text-gray-600">star</span>
+</div>
+</div>
+<!-- Skill Item -->
+<div class="p-4 flex flex-col gap-2">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="text-base font-semibold text-text-main dark:text-text-main-dark">Tsukahara</h4>
+<p class="text-sm text-text-sub dark:text-text-sub-dark mt-0.5">Great height and rotation!</p>
+</div>
+<span class="text-sm font-bold text-text-main dark:text-text-main-dark bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">4/5</span>
+</div>
+<!-- Stars -->
+<div class="flex gap-1 text-primary">
+<span class="material-symbols-outlined text-[20px] fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-[20px] fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-[20px] fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-[20px] fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-[20px] text-gray-300 dark:text-gray-600">star</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 2: Uneven Bars (Collapsed) -->
+<article class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+<div class="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-text-sub dark:text-text-sub-dark">
+<span class="material-symbols-outlined">accessibility_new</span>
+</div>
+<h3 class="text-lg font-bold text-text-main dark:text-text-main-dark">Uneven Bars</h3>
+</div>
+<span class="material-symbols-outlined text-gray-400">expand_more</span>
+</div>
+</article>
+<!-- Card 3: Floor (Collapsed) -->
+<article class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+<div class="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-text-sub dark:text-text-sub-dark">
+<span class="material-symbols-outlined">directions_run</span>
+</div>
+<h3 class="text-lg font-bold text-text-main dark:text-text-main-dark">Floor</h3>
+</div>
+<span class="material-symbols-outlined text-gray-400">expand_more</span>
+</div>
+</article>
+</div>
+</main>
+<!-- Floating Action Bar (Sticky Footer) -->
+<div class="fixed bottom-0 left-0 w-full p-4 z-40">
+<!-- Floating Container -->
+<div class="mx-auto w-full max-w-lg bg-white/90 dark:bg-surface-dark/90 backdrop-blur-md rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/20 dark:border-white/5 p-2.5">
+<div class="flex gap-3">
+<!-- Secondary Action: Report -->
+<button class="flex-1 flex flex-col items-center justify-center gap-1 py-3 px-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent hover:bg-gray-50 dark:hover:bg-white/5 active:scale-95 transition-all group">
+<span class="material-symbols-outlined text-text-sub dark:text-text-sub-dark group-hover:text-text-main dark:group-hover:text-white transition-colors">description</span>
+<span class="text-xs font-semibold text-text-main dark:text-text-main-dark">Report</span>
+</button>
+<!-- Primary Action: Certificate -->
+<button class="flex-[2] flex flex-row items-center justify-center gap-3 py-3 px-6 rounded-xl bg-primary hover:bg-primary-dark text-text-main shadow-lg shadow-primary/25 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1">workspace_premium</span>
+<div class="flex flex-col items-start">
+<span class="text-sm font-bold leading-tight">Award Certificate</span>
+<span class="text-[10px] opacity-80 font-medium leading-tight">Celebrate success</span>
+</div>
+</button>
+</div>
+</div>
+</div>
+</body></html>

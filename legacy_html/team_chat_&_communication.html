@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Team Chat &amp; Communication - Wild Robot</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#10b77f",
+                        "primary-dark": "#0d9668",
+                        "emerald-green": "#10b981",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#10221c",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#162e26",
+                        "text-main-light": "#0d1b17",
+                        "text-main-dark": "#e0e7e5",
+                        "text-sub-light": "#4c9a80",
+                        "text-sub-dark": "#8fcab5",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>.no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased transition-colors duration-200">
+<div class="relative flex h-full min-h-screen w-full flex-col max-w-md mx-auto shadow-2xl overflow-hidden bg-background-light dark:bg-background-dark">
+<header class="sticky top-0 z-20 bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
+<h1 class="text-2xl font-bold tracking-tight text-text-main-light dark:text-text-main-dark">Messages</h1>
+<div class="flex items-center gap-4">
+<button aria-label="Search" class="p-2 text-text-main-light dark:text-text-main-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+<span class="material-symbols-outlined text-[24px]">search</span>
+</button>
+<button class="text-primary font-semibold text-sm hover:text-primary-dark transition-colors">
+                    New Group
+                </button>
+</div>
+</header>
+<div class="sticky top-[60px] z-10 bg-background-light dark:bg-background-dark pt-3 pb-2 px-4">
+<div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+<button class="flex h-9 shrink-0 items-center justify-center px-5 rounded-lg bg-primary text-white shadow-sm shadow-primary/20 transition-all active:scale-95">
+<span class="text-sm font-medium">All</span>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center px-5 rounded-lg bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-text-main-light dark:text-text-main-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-all active:scale-95">
+<span class="text-sm font-medium">Staff</span>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center px-5 rounded-lg bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-text-main-light dark:text-text-main-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-all active:scale-95">
+<span class="text-sm font-medium">Parents</span>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center px-5 rounded-lg bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-text-main-light dark:text-text-main-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-all active:scale-95">
+<span class="text-sm font-medium">Groups</span>
+</button>
+</div>
+</div>
+<main class="flex-1 overflow-y-auto px-2 pb-24">
+<div class="group relative flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-surface-dark transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-800 last:border-0">
+<div class="relative shrink-0 size-[52px] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 grid grid-cols-2 gap-[1px]">
+<div class="bg-cover bg-center" data-alt="Portrait of a coach smiling" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA302Vfj_scbVHFJJ7Cxv_Lp8zOGaIe2pZaJg_gj-id96ETCDOqmaQh4QP73w7b4iC0DB5oCgCUfDzq7sh3U6SbbwUILliS-CjAAOeF66jQU1MgaSKCfaaJ-M7AKZbB5l56XLUykurAtKVFSqT9L11jShkp-4-9ZkRJmhkK_i6EiohA1-43pwziwz_ED6YlH4SwAh-KGeVzH8pT6IxRFCQIBFrD5Cp13WBfL57snDlWD_jQ9vgPNmY-065xxyK4lf6xfCm1_qw9l0Ir');"></div>
+<div class="bg-cover bg-center" data-alt="Portrait of a gym staff member" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCUOlCN1IzFhlomMGWeAEyFjFqj-tPQDPcr9OTb-puz0VMkt_qadQep5hVfLHpoExqJ9gpRU7t4YmpnPGa0SBJysNucRUjsPXh4EokefyZfkcE1ikuNv7AAQqKnp9dYGYO9wy7aEFg0W-kEe1upl4xHgyoU5fhhwdGqbxpp-pvf-TI9LFp-EBP5Bf5Si-DsC2j4XpfTiEH6ounWRSMdGUEVUrbdQYYt9vTqwlvqyplIlQZEwD0E9lyEMtQUlvjNr38UB9GUqfxYD5_L');"></div>
+<div class="bg-cover bg-center" data-alt="Portrait of a female coach" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAP31tI5xEC0tI9Io9JDC51tOPep1Xs0nb8J5mS2PS4XwK_6tsPR7yL1YZHJTCy5uRHf-tK7WOu2qbF2ev13_uMZltqbkXRKKND6Jx5sWUF3n56ecNXKKa2fs1hw2iDdze5GOtzhyCQc4e7kkxmQvW0SBk44uK_qze1LK_rIF748k-adtCqF9DJgj3clyQ-p2KoJdpzH8VIUEvTm87JR6vkytJiVXMEENXm3MHcVw15whboEdrMjGLH_AczX0h9__7gIFV6tBEXkfC0');"></div>
+<div class="bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">+3</div>
+</div>
+<div class="flex flex-col flex-1 min-w-0 justify-center">
+<div class="flex justify-between items-baseline mb-0.5">
+<h3 class="text-text-main-light dark:text-text-main-dark text-[15px] font-semibold truncate pr-2">Tilal Coaches 🔵</h3>
+<span class="text-text-sub-light dark:text-text-sub-dark text-xs font-medium whitespace-nowrap">10:30 AM</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-gray-500 dark:text-gray-400 text-[13px] truncate pr-4">Admin: Schedule updated for tomorrow...</p>
+<div class="flex items-center justify-center size-5 bg-primary rounded-full text-[10px] font-bold text-white shrink-0">3</div>
+</div>
+</div>
+</div>
+<div class="group relative flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-surface-dark transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-800">
+<div class="relative shrink-0">
+<div class="size-[52px] rounded-full bg-cover bg-center border-2 border-white dark:border-background-dark shadow-sm" data-alt="Portrait of Coach Sarah" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBnxlF3VlCD0w3QHRCKdqi4g4FGTQdVddEyHcuqP1iRK1rpoegqTZ6rwR6q2HgQtsMHQqKQIhKeRNIWhdblvfCc4xf744ODtkhihL1X8g7rIcxmye-AKyT7F_Ak9ZXYZlkgHVmL7f6gJXC_HM7HNEMO2FZafPGw7HlyroK5ESU3bO0EHPY3IIKDHjR3e-17EsiUedkVrAje-sHz8nO1nUwep16nLMkat1Pg0kU09eec97EQMVXVZKzE3YGFNB2sZnKNssyVTJbPaHeE');"></div>
+<div class="absolute bottom-0 right-0 size-3.5 bg-primary border-2 border-white dark:border-background-dark rounded-full"></div>
+</div>
+<div class="flex flex-col flex-1 min-w-0 justify-center">
+<div class="flex justify-between items-baseline mb-0.5">
+<h3 class="text-text-main-light dark:text-text-main-dark text-[15px] font-semibold truncate pr-2">Coach Sarah</h3>
+<span class="text-primary text-xs font-bold whitespace-nowrap">9:45 AM</span>
+</div>
+<p class="text-text-main-light dark:text-text-main-dark font-medium text-[13px] truncate pr-4">Can you cover my shift?</p>
+</div>
+</div>
+<div class="group relative flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-surface-dark transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-800">
+<div class="relative shrink-0 size-[52px] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 grid grid-cols-2 gap-[1px]">
+<div class="bg-cover bg-center col-span-1 h-full" data-alt="Abstract colorful pattern" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAmY_vwvWIE5mo6p1Dh_oWT7P2NNdmbu1P-iH3H7Gv4ViATQxPt16gaYlCS8hBYdo3AyDFF8InfoLUfyZkH1PIhs_-iSLMSnRU0mMk7diCDCcgpLLXlINcBAfgYrj__INSgo7ryi8jvZ3EJ3cnF3zdzvlwixmwCLHDFwx-HwA1nAkH3Rhgee1kB65xJ34LQ-EXUiWKXR2SLFM5iO9eBeWlT-wb7TuDuD71co6vMj3cpiWG7UVwhD4IZ-YvBV-iz6O6K41_X8z1A1fpx');"></div>
+<div class="col-span-1 grid grid-rows-2 gap-[1px]">
+<div class="bg-cover bg-center h-full" data-alt="Portrait of a parent" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCix5ZhlbKdNPIGA30FUZ7vpuRYJf21fQ3YzPwrE1MVsDyaeoiNDm2zV_MZVfE3He-eKyLSQW9T0ZmYQEoJJi2QWo-HqTo8OtJHaNMb3-QAQZ8ObyiDyPeeyGcO9EWCYN_kpewGaVe32Xs5FB2CDbSCmQiaBfShsxmzlW6V6mis7qgdduJ8D3oWg5mn8fcXQMIBClz4Qe2a3KpgVlWWNOfuqHyoSrb8rO4WQEI6cKIYO7Yy81pAd3r4bC4jDg9LyRKAKTSSiO_Rq4hK');"></div>
+<div class="bg-cover bg-center h-full" data-alt="Portrait of another parent" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDbEVF8hUY7hkdzmgoCr7YPeCdvjTXg_4if0XDLfWutbvjbeUqAOmFFwL5fpuI544YKXblpy5fxvLIwINBwpEbd54VphypkgKlOx0Yz6QucnGdZGXtaulrmQl9IJ4cYgckg5gbjwPjxEstab_PUFXzIGxm23o9xG1XNvf_uQw_VihVjeMW-4OfvQYYMq-5UHLUoq0pRejIvvy5WPCQzO08FyHhlfB-zvlqaXBd0QN-nNAMYUhNe_bnetek_FMpeXvNPhSXyDfmUwIBD');"></div>
+</div>
+</div>
+<div class="flex flex-col flex-1 min-w-0 justify-center">
+<div class="flex justify-between items-baseline mb-0.5">
+<h3 class="text-text-main-light dark:text-text-main-dark text-[15px] font-semibold truncate pr-2">Elite Squad Parents</h3>
+<span class="text-text-sub-light dark:text-text-sub-dark text-xs font-medium whitespace-nowrap">Yesterday</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-gray-500 dark:text-gray-400 text-[13px] truncate pr-4">Please remember leotards for the competition!</p>
+</div>
+</div>
+</div>
+<div class="group relative flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-surface-dark transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-800">
+<div class="relative shrink-0">
+<div class="size-[52px] rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold text-lg border-2 border-white dark:border-background-dark shadow-sm">
+                        FD
+                    </div>
+</div>
+<div class="flex flex-col flex-1 min-w-0 justify-center">
+<div class="flex justify-between items-baseline mb-0.5">
+<h3 class="text-text-main-light dark:text-text-main-dark text-[15px] font-semibold truncate pr-2">Front Desk</h3>
+<span class="text-text-sub-light dark:text-text-sub-dark text-xs font-medium whitespace-nowrap">Mon</span>
+</div>
+<p class="text-text-main-light dark:text-text-main-dark font-medium text-[13px] truncate pr-4">New registration pending approval.</p>
+</div>
+</div>
+<div class="group relative flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-surface-dark transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-800">
+<div class="relative shrink-0">
+<div class="size-[52px] rounded-full bg-cover bg-center border-2 border-white dark:border-background-dark shadow-sm grayscale opacity-80" data-alt="Portrait of Coach Mike" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCl5zVMb3L1moFFytfnY_vZi6prEuxIw2V9HkKedcz17jJzWpd03fiSjYHHaznjPJNKB3Vgd2uxzHnmQuO8QFaE8hEmu9ESJXgWp9Z75WfiajQI3ClA0isKitOhySz8rWOPHNh3j3-sSwrWaYSLq4AVpsREIgK6UDW5tjcNDXK5ETa2_JDGNGh8GPVhxu5El1sN6KvxHOyldOxsfWFdlkqPxH-yYU-Cgx5iaEow_pcR4LUiLUaCHampTRjsBk_ToKZk377rI5lg5b6A');"></div>
+</div>
+<div class="flex flex-col flex-1 min-w-0 justify-center">
+<div class="flex justify-between items-baseline mb-0.5">
+<h3 class="text-text-main-light dark:text-text-main-dark text-[15px] font-semibold truncate pr-2">Head Coach Mike</h3>
+<span class="text-text-sub-light dark:text-text-sub-dark text-xs font-medium whitespace-nowrap">Sun</span>
+</div>
+<p class="text-gray-500 dark:text-gray-400 text-[13px] truncate pr-4">Equipment inspection complete.</p>
+</div>
+</div>
+<div class="group relative flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-surface-dark transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-800">
+<div class="relative shrink-0 size-[52px] rounded-lg overflow-hidden bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+<span class="material-symbols-outlined text-purple-600 dark:text-purple-300">event</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0 justify-center">
+<div class="flex justify-between items-baseline mb-0.5">
+<h3 class="text-text-main-light dark:text-text-main-dark text-[15px] font-semibold truncate pr-2">Events Committee</h3>
+<span class="text-text-sub-light dark:text-text-sub-dark text-xs font-medium whitespace-nowrap">Sun</span>
+</div>
+<p class="text-gray-500 dark:text-gray-400 text-[13px] truncate pr-4">Venue booked for Winter Gala.</p>
+</div>
+</div>
+<div class="group relative flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-surface-dark transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-800">
+<div class="relative shrink-0">
+<div class="size-[52px] rounded-full bg-cover bg-center border-2 border-white dark:border-background-dark shadow-sm" data-alt="Portrait of Equipment Manager" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD6Mgh1kj85Cp270oqSPp_RG2Cnv2F0IZjnD7ot_WJqCYB93Tr7J_mNSy8nzG5nOkgLeTK-npUAqHQwcgZIku9hfs1OtN5kyRGAZpb_Z1r0gwilGqJRwOuxVXKckmOx8K-xFP4EgFSBQCYwn3nY4nR0MBz3uhRfDJiQI1LEAhlfK853HlPsd8F0JAhMK2w7e_ESPrMM9rPs1yVZG8qXqiBuQ-rLbcbJweLn4hdWElKHsFw08b03FFLNdd98vg9wATOwiGatBsWfizKP');"></div>
+<div class="absolute bottom-0 right-0 size-3.5 bg-primary border-2 border-white dark:border-background-dark rounded-full"></div>
+</div>
+<div class="flex flex-col flex-1 min-w-0 justify-center">
+<div class="flex justify-between items-baseline mb-0.5">
+<h3 class="text-text-main-light dark:text-text-main-dark text-[15px] font-semibold truncate pr-2">Equipment Mgr.</h3>
+<span class="text-text-sub-light dark:text-text-sub-dark text-xs font-medium whitespace-nowrap">Sat</span>
+</div>
+<p class="text-gray-500 dark:text-gray-400 text-[13px] truncate pr-4">The new foam pit blocks have arrived.</p>
+</div>
+</div>
+<div class="h-20"></div>
+</main>
+<button class="fixed bottom-[90px] right-6 z-30 flex items-center justify-center size-14 bg-primary hover:bg-primary-dark text-white rounded-lg shadow-[0_4px_20px_rgba(16,183,127,0.4)] transition-all active:scale-90 active:rotate-90">
+<span class="material-symbols-outlined text-[28px]">edit_square</span>
+</button>
+<nav class="fixed bottom-0 z-20 w-full max-w-md bg-white dark:bg-surface-dark border-t border-gray-100 dark:border-gray-800 pb-safe">
+<div class="flex justify-between items-center h-[70px] px-2">
+<a class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-emerald-green transition-colors gap-1.5" href="#">
+<span class="material-symbols-outlined text-[26px]">home</span>
+<span class="text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-emerald-green transition-colors gap-1.5" href="#">
+<span class="material-symbols-outlined text-[26px]">calendar_today</span>
+<span class="text-[10px] font-medium">Schedule</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-emerald-green transition-colors gap-1.5" href="#">
+<span class="material-symbols-outlined text-[26px]">groups</span>
+<span class="text-[10px] font-medium">Roster</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-emerald-green transition-colors gap-1.5" href="#">
+<span class="material-symbols-outlined text-[26px] fill-1">chat_bubble</span>
+<span class="text-[10px] font-medium">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-emerald-green transition-colors gap-1.5" href="#">
+<span class="material-symbols-outlined text-[26px]">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</div>
+</nav>
+</div>
+</body></html>

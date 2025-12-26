@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Active Chat Thread</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#10b77f",
+                        "primary-dark": "#0d9668",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#10221c",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1c2e28",
+                        "bubble-incoming": "#eef2f1",
+                        "bubble-incoming-dark": "#2a3d37",
+                        "text-main": "#111816",
+                        "text-secondary": "#61897c",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "2xl": "2rem", 
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        
+        .safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-gray-100 antialiased h-screen flex flex-col overflow-hidden">
+<!-- Sticky Header -->
+<header class="bg-surface-light dark:bg-surface-dark border-b border-gray-100 dark:border-gray-800 shrink-0 z-20">
+<div class="flex items-center justify-between px-4 py-3">
+<!-- Back Button -->
+<button class="flex items-center justify-center w-10 h-10 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-text-main dark:text-white">
+<span class="material-symbols-outlined" style="font-size: 24px;">arrow_back_ios_new</span>
+</button>
+<!-- Centered Group Info -->
+<div class="flex flex-col items-center justify-center flex-1 mx-2 cursor-pointer">
+<div class="relative mb-1">
+<!-- Avatar Stack representation or single group avatar -->
+<div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 bg-cover bg-center border-2 border-white dark:border-surface-dark shadow-sm" data-alt="Gymnastics coach group avatar showing a blurred gym background" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAIkM8xSoDI-jKL8lilD9S8yGBiKvY4KQv7Z4OJXNYyAj0kjp9QmjzT4KNx3CCLcxo5LA_FU9LULuBiecDFXSM1GFq81DfBTlU0soSXs6BLIs9xTX0nzu0OP-uYAbeu2rT-mgTiJ_cjreQ4c1etXBgTTPcqUdFUYOdVGtVpADjQW5hcXUOXbDk_SXOMC08mAO_jk1kbNdkisz3oO-3xae-1Zy_j0UzoEvwz1tEkLUhZg5NlzFSwwoylf4jaZGn6lw5YyPxqy3EfYJIf');">
+</div>
+<div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-surface-dark rounded-full"></div>
+</div>
+<h1 class="text-sm font-bold text-text-main dark:text-white leading-tight">Tilal Coaches Group 🔵</h1>
+<p class="text-xs text-text-secondary dark:text-gray-400 font-medium mt-0.5">
+                    8 members, <span class="text-primary font-bold">2 online</span>
+</p>
+</div>
+<!-- Info Button -->
+<button class="flex items-center justify-center w-10 h-10 -mr-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-text-main dark:text-white">
+<span class="material-symbols-outlined" style="font-size: 26px;">info</span>
+</button>
+</div>
+</header>
+<!-- Chat Area -->
+<main class="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6 scroll-smooth bg-background-light dark:bg-background-dark">
+<!-- Date Separator -->
+<div class="flex justify-center pt-2">
+<span class="bg-surface-light dark:bg-surface-dark/50 text-text-secondary dark:text-gray-400 text-xs font-semibold px-3 py-1 rounded-full shadow-sm border border-gray-100 dark:border-gray-800">
+                Today 9:41 AM
+            </span>
+</div>
+<!-- Incoming Message (Sarah) -->
+<div class="flex items-end gap-3 group">
+<div class="bg-gray-200 dark:bg-gray-700 w-8 h-8 rounded-full shrink-0 bg-cover bg-center mb-1 shadow-sm" data-alt="Portrait of Sarah Coach smiling" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCoBbE7SzSNwt2H2LZJr-aqHZLr3_f195BT_iiq_GgBpuicwjzILeDHSl6h7VwFH95ZZ-CJ3tsDxVyye614SazYMrlAlvjoC9Tgwh7M2nregzpgt07_xrFl2TeqpD03Ly-vbCk21UL5QXDRRNuhBBa3WIR7P_ZVJtAOLdUMRRX9M2Kc7daA4mvdMMfo9nhxEnd6HFQeYodC-wEcSwUppkLLxriaMmTJCatKJ95P_SAe_4DXJmBUjX8EnRYbjcH3lR2wvPt89Tf0ZEly');">
+</div>
+<div class="flex flex-col gap-1 max-w-[75%] sm:max-w-[60%]">
+<span class="text-xs text-text-secondary dark:text-gray-400 font-medium ml-1">Sarah Coach</span>
+<div class="p-4 bg-surface-light dark:bg-surface-dark text-text-main dark:text-gray-100 text-[15px] leading-relaxed rounded-2xl rounded-tl-none shadow-sm border border-gray-100 dark:border-gray-800">
+<p>Has everyone seen the updated schedule for beam rotation?</p>
+</div>
+</div>
+</div>
+<!-- Outgoing Message (Me) -->
+<div class="flex items-end justify-end gap-3 group">
+<div class="flex flex-col items-end gap-1 max-w-[75%] sm:max-w-[60%]">
+<!-- No name label for self usually in modern chat, but nice to have structure -->
+<div class="p-4 bg-primary text-white text-[15px] leading-relaxed rounded-2xl rounded-tr-none shadow-md">
+<p>Yes, downloaded it this morning. Looks good.</p>
+</div>
+<!-- Read receipt / status -->
+<span class="text-[10px] text-text-secondary dark:text-gray-500 font-medium flex items-center gap-1 mr-1">
+                    9:43 AM <span class="material-symbols-outlined text-primary" style="font-size: 14px;">done_all</span>
+</span>
+</div>
+<!-- Optional: Self Avatar -->
+<div class="bg-gray-200 dark:bg-gray-700 w-8 h-8 rounded-full shrink-0 bg-cover bg-center mb-6 shadow-sm" data-alt="Portrait of the user" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCq-eR1FjCeumW7SCRagW8ZQwACfIo2oZ6I3Het6hUYIaE25E9JW7slN6Xw2UdRmh5GIK_z9PEuImgsw1-cwvVbyWgisgwL5Cy1eARlMtd8xMf9D5HB41gXV6743ujK_OE1K9JWlL18Pm47Qq6vxrcTJ-rfuq6ou_lrBtlo5XBpQGURoJnptVwTGGrmKP4izG40lbs7dMyx62VzuH3Sb3gNufS0YAjGjLEeTS2cdDZyI792cdvpxyJPq62BAcfvKXkJGhz4JZRvtIJp');">
+</div>
+</div>
+<!-- Incoming Message (Sarah) -->
+<div class="flex items-end gap-3 group">
+<div class="bg-gray-200 dark:bg-gray-700 w-8 h-8 rounded-full shrink-0 bg-cover bg-center mb-1 shadow-sm" data-alt="Portrait of Sarah Coach smiling" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC2FF9udBYT_j9JtSI_kWBSDkAOZjtRDnU_-jmpSwXrc8Iq4AOYt4CAfyOI7z5YKuUiNaH7-zVXARInuhk3PFtHHGd-96wvH8zI4lSiJnb3UGdwoaPmHZEZZBsmLfiKI60EU4aEo0Ms-NBEhiB-XvYoEALNM1RlQo7dkWa0QdSMommavQLiMMRvqInrEFKggSk3T-s_NnDUNUSKhUP_JQSu7YDyMTJPdrpDRApyfBRnofXIC_nNywj-t52q0Ag-zI31nBObgx9CSmkx');">
+</div>
+<div class="flex flex-col gap-1 max-w-[75%] sm:max-w-[60%]">
+<span class="text-xs text-text-secondary dark:text-gray-400 font-medium ml-1">Sarah Coach</span>
+<div class="p-4 bg-surface-light dark:bg-surface-dark text-text-main dark:text-gray-100 text-[15px] leading-relaxed rounded-2xl rounded-tl-none shadow-sm border border-gray-100 dark:border-gray-800">
+<p>Great, let's meet 10 mins early to prep.</p>
+</div>
+</div>
+</div>
+<!-- Spacer for scrolling behind fixed footer -->
+<div class="h-4"></div>
+</main>
+<!-- Fixed Input Area -->
+<footer class="bg-surface-light dark:bg-surface-dark border-t border-gray-100 dark:border-gray-800 safe-bottom z-20">
+<div class="flex items-end gap-2 p-3 sm:px-4 sm:py-3">
+<!-- Attachment Button -->
+<button class="shrink-0 flex items-center justify-center w-10 h-10 text-text-secondary dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 mb-[2px]">
+<span class="material-symbols-outlined -rotate-45" style="font-size: 24px;">attach_file</span>
+</button>
+<!-- Input Field -->
+<div class="flex-1 bg-background-light dark:bg-gray-800 rounded-3xl flex items-center min-h-[44px] border border-transparent focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+<textarea class="w-full bg-transparent border-none text-text-main dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-0 resize-none py-3 px-4 text-[15px] max-h-32" placeholder="Type a message..." rows="1" style="min-height: 44px;"></textarea>
+</div>
+<!-- Mic Button (hidden when typing usually, but shown here per request) -->
+<button class="shrink-0 flex items-center justify-center w-10 h-10 text-text-secondary dark:text-gray-400 hover:text-text-main dark:hover:text-white transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 mb-[2px]">
+<span class="material-symbols-outlined" style="font-size: 24px;">mic</span>
+</button>
+<!-- Send Button -->
+<button class="shrink-0 flex items-center justify-center w-11 h-11 bg-primary hover:bg-primary-dark text-white rounded-full transition-all shadow-md active:scale-95 mb-[1px]">
+<span class="material-symbols-outlined ml-0.5" style="font-size: 20px;">send</span>
+</button>
+</div>
+</footer>
+</body></html>
