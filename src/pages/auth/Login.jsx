@@ -85,7 +85,7 @@ const Login = () => {
 
             // 2. Role Check
             const uid = data.user.id;
-            const { data: profile } = await supabase
+            let { data: profile } = await supabase
                 .from('profiles')
                 .select('role')
                 .eq('id', uid)
@@ -213,8 +213,8 @@ const Login = () => {
                                             <ShieldCheck className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">Coach Portal</h3>
-                                            <p className="text-slate-500 text-xs font-medium">Management & Analytics</p>
+                                            <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">Staff Portal</h3>
+                                            <p className="text-slate-500 text-xs font-medium">Management & Operations Dashboard</p>
                                         </div>
                                     </div>
                                     <ArrowRight className="text-slate-600 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
@@ -272,11 +272,11 @@ const Login = () => {
                             <div className="mb-8">
                                 <h2 className="text-2xl font-black text-white mb-2 flex items-center gap-3">
                                     <activeTheme.icon className={`w-8 h-8 ${activeTheme.text}`} />
-                                    {isAthlete ? 'Athlete Access' : 'Coach Login'}
+                                    {isAthlete ? 'Athlete Access' : 'Welcome Back'}
                                 </h2>
                                 <p className="text-slate-400 text-sm">
                                     Enter your credentials to access the
-                                    <span className={`font-bold ${activeTheme.text}`}> {isAthlete ? 'Arena' : 'Dashboard'}</span>.
+                                    <span className={`font-bold ${activeTheme.text}`}> Workspace</span>.
                                 </p>
                             </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, Plus, Users, User, MapPin, MoreHorizontal, Mail, Phone, UserPlus } from 'lucide-react';
+import { Search, Filter, Plus, Users, MoreHorizontal, Mail, Phone, UserPlus } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import AddAthleteModal from '../../components/AddAthleteModal';
 
