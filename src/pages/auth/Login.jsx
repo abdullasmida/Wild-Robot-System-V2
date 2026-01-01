@@ -53,8 +53,12 @@ const Login = () => {
 
                 const userRole = profile?.role || 'coach';
 
-                if (userRole === 'athlete') navigate('/athlete', { replace: true });
-                else navigate('/coach/home', { replace: true });
+                if (userRole === 'athlete') {
+                    navigate('/athlete', { replace: true });
+                } else {
+                    // Let the Traffic Cop (ProtectedRoute) decide where they go
+                    navigate('/owner/dashboard', { replace: true });
+                }
             } else {
                 setAuthChecking(false);
             }
@@ -122,13 +126,8 @@ const Login = () => {
                 navigate('/athlete');
             } else {
                 // Check if Academy is set up
-                const academyId = profile.academy_id || data.user.user_metadata?.academy_id;
-
-                if (!academyId) {
-                    navigate('/setup');
-                } else {
-                    navigate('/coach/home');
-                }
+                // Let the Guard handle the setup check
+                navigate('/owner/dashboard');
             }
 
         } catch (error) {

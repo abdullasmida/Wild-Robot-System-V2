@@ -1,0 +1,323 @@
+import React, { useState } from 'react';
+import {
+    User, Phone, Heart, Trash2, Plus,
+    Sparkles, AlertCircle, Save
+} from 'lucide-react';
+import { supabase } from '../../supabaseClient';
+import { toast } from 'sonner';
+
+const AthleteInviteForm = ({ onSuccess, onCancel }) => {
+    const [loading, setLoading] = useState(false);
+
+    // Batch State
+    const [entries, setEntries] = useState([
+        {
+            id: Date.now(),
+            name: '',
+            gender: 'male',
+            dob: '2015-01-01',
+            guardianName: '',
+            guardianPhone: '',
+            relationship: 'parent',
+            medicalTags: []
+        }
+    ]);
+
+    const MEDICAL_TAGS = ['Asthma', 'Diabetes', 'Epilepsy', 'Nut Allergy', 'Injury History'];
+
+    // --- Actions ---
+
+    const addRow = () => {
+        setEntries(prev => [
+            ...prev,
+            {
+                id: Date.now(),
+                name: '',
+                gender: 'male',
+                dob: '2015-01-01',
+                guardianName: '',
+                guardianPhone: '',
+                relationship: 'parent',
+                medicalTags: []
+            }
+        ]);
+    };
+
+    const removeRow = (id) => {
+        if (entries.length > 1) {
+            setEntries(prev => prev.filter(e => e.id !== id));
+        }
+    };
+
+    const handleChange = (id, field, value) => {
+        if (field === 'guardianPhone') value = value.replace(/[^0-9+ ]/g, '');
+
+        setEntries(prev => prev.map(entry => {
+            if (entry.id === id) {
+                return { ...entry, [field]: value };
+            }
+            return entry;
+        }));
+    };
+
+    const toggleMedical = (id, tag) => {
+        setEntries(prev => prev.map(entry => {
+            if (entry.id === id) {
+                const tags = entry.medicalTags.includes(tag)
+                    ? entry.medicalTags.filter(t => t !== tag)
+                    : [...entry.medicalTags, tag];
+                return { ...entry, medicalTags: tags };
+            }
+            return entry;
+        }));
+    };
+
+    // --- Submission ---
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        const toastId = toast.loading("Processing Recruitment Batch...");
+
+        let successCount = 0;
+        let failCount = 0;
+        const failedNames = [];
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("No session");
+
+            // Get Academy ID
+            const { data: profile } = await supabase.from('profiles').select('academy_id').eq('id', user.id).single();
+            if (!profile?.academy_id) throw new Error("No Academy Linked");
+
+            // Loop through entries
+            for (const entry of entries) {
+                try {
+                    // 1. Insert/Get Guardian
+                    const { data: guardian, error: guardianError } = await supabase
+                        .from('guardians')
+                        .insert({
+                            academy_id: profile.academy_id,
+                            name: entry.guardianName,
+                            phone: entry.guardianPhone,
+                            relationship_type: entry.relationship
+                        })
+                        .select()
+                        .single();
+
+                    if (guardianError) throw guardianError;
+
+                    // 2. Insert Athlete
+                    const { data: athlete, error: athleteError } = await supabase
+                        .from('athletes')
+                        .insert({
+                            academy_id: profile.academy_id,
+                            name: entry.name,
+                            gender: entry.gender,
+                            dob: entry.dob,
+                            medical_info: { tags: entry.medicalTags },
+                            stats: { overall: 60 }
+                        })
+                        .select()
+                        .single();
+
+                    if (athleteError) throw athleteError;
+
+                    // 3. Link
+                    const { error: linkError } = await supabase
+                        .from('athlete_guardians')
+                        .insert({
+                            athlete_id: athlete.id,
+                            guardian_id: guardian.id
+                        });
+
+                    if (linkError) throw linkError;
+
+                    successCount++;
+
+                } catch (innerErr) {
+                    console.error(`Failed to add ${entry.name}`, innerErr);
+                    failCount++;
+                    failedNames.push(entry.name || 'Unknown');
+                }
+            }
+
+            // Final Report
+            if (failCount === 0) {
+                toast.success(`Recruited ${successCount} new heroes!`, { id: toastId });
+                onSuccess(); // Close modal
+            } else {
+                toast.warning(`${successCount} succeeded, ${failCount} failed (${failedNames.join(', ')}).`, { id: toastId });
+                // We keep the modal open if there are failures, ideally we'd filter the list to show only failed ones, 
+                // but for now we just keep it open so they can retry or see what happened.
+            }
+
+        } catch (err) {
+            console.error("Batch Error:", err);
+            toast.error(err.message, { id: toastId });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="flex flex-col h-full bg-slate-50">
+
+            {/* Scrollable Container */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+                <div className="flex items-center gap-2 mb-2 px-2">
+                    <Sparkles className="w-4 h-4 text-emerald-500" />
+                    <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+                        Batch Entry Mode
+                    </span>
+                </div>
+
+                {entries.map((entry, index) => (
+                    <div key={entry.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 animate-fade-in-up relative group">
+
+                        {/* Remove Button (Only if > 1) */}
+                        {entries.length > 1 && (
+                            <button
+                                type="button"
+                                onClick={() => removeRow(entry.id)}
+                                className="absolute right-4 top-4 text-slate-300 hover:text-red-500 transition-colors"
+                            >
+                                <Trash2 className="w-5 h-5" />
+                            </button>
+                        )}
+
+                        <div className="grid grid-cols-1 gap-4">
+
+                            {/* Row 1: Athlete Identity */}
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                <div className="md:col-span-5">
+                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Hero Name</label>
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-3 w-4 h-4 text-slate-300" />
+                                        <input
+                                            required
+                                            value={entry.name}
+                                            onChange={e => handleChange(entry.id, 'name', e.target.value)}
+                                            className="w-full pl-9 p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:border-emerald-500 outline-none font-bold text-sm"
+                                            placeholder="Full Name"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="md:col-span-3">
+                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Gender</label>
+                                    <select
+                                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm font-medium"
+                                        value={entry.gender}
+                                        onChange={e => handleChange(entry.id, 'gender', e.target.value)}
+                                    >
+                                        <option value="male">Boy</option>
+                                        <option value="female">Girl</option>
+                                    </select>
+                                </div>
+                                <div className="md:col-span-4">
+                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Date of Birth</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={entry.dob}
+                                        onChange={e => handleChange(entry.id, 'dob', e.target.value)}
+                                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm font-bold text-slate-600"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="h-px bg-slate-100" />
+
+                            {/* Row 2: Guardian & Medical */}
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                                <div className="md:col-span-4">
+                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Guardian Name</label>
+                                    <input
+                                        required
+                                        value={entry.guardianName}
+                                        onChange={e => handleChange(entry.id, 'guardianName', e.target.value)}
+                                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:border-emerald-500 outline-none font-medium text-sm"
+                                        placeholder="Parent Name"
+                                    />
+                                </div>
+                                <div className="md:col-span-4">
+                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Contact Phone</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-3 w-4 h-4 text-slate-300" />
+                                        <input
+                                            required
+                                            type="tel"
+                                            value={entry.guardianPhone}
+                                            onChange={e => handleChange(entry.id, 'guardianPhone', e.target.value)}
+                                            className="w-full pl-9 p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:border-emerald-500 outline-none font-medium text-sm"
+                                            placeholder="+971..."
+                                        />
+                                    </div>
+                                </div>
+                                <div className="md:col-span-4">
+                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block flex items-center gap-1">
+                                        Medical <Heart className="w-3 h-3 text-red-400" />
+                                    </label>
+                                    <div className="flex flex-wrap gap-1">
+                                        {MEDICAL_TAGS.slice(0, 3).map(tag => (
+                                            <button
+                                                key={tag}
+                                                type="button"
+                                                onClick={() => toggleMedical(entry.id, tag)}
+                                                className={`px-2 py-1 rounded text-[10px] font-bold border transition-all ${entry.medicalTags.includes(tag)
+                                                        ? 'bg-red-50 border-red-200 text-red-600'
+                                                        : 'bg-white border-slate-100 text-slate-300 hover:border-slate-300'
+                                                    }`}
+                                            >
+                                                {tag}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                ))}
+
+                {/* Add Row Button */}
+                <button
+                    type="button"
+                    onClick={addRow}
+                    className="w-full py-4 border-2 border-dashed border-slate-300 rounded-2xl text-slate-400 font-bold hover:border-emerald-400 hover:text-emerald-500 hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
+                >
+                    <Plus className="w-5 h-5" /> Add Another Hero
+                </button>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-4 bg-white border-t border-slate-100 flex items-center justify-between z-10">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="px-6 py-3 font-bold text-slate-500 hover:text-slate-800 transition-colors"
+                >
+                    Cancel
+                </button>
+                <div className="flex items-center gap-4">
+                    <span className="text-sm font-bold text-slate-400">
+                        {entries.length} Hero{entries.length > 1 ? 'es' : ''} Ready
+                    </span>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        {loading ? 'Processing...' : 'Recruit All Heroes'}
+                        <Save className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+        </form>
+    );
+};
+
+export default AthleteInviteForm;

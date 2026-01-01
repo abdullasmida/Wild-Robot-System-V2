@@ -36,7 +36,7 @@ const Signup = () => {
                         full_name: fullName,
                         first_name: formData.firstName,
                         last_name: formData.lastName,
-                        role: 'coach'
+                        role: 'owner'
                     }
                 }
             });
@@ -44,8 +44,8 @@ const Signup = () => {
             if (error) throw error;
 
             if (data.user) {
-                // Success! Redirect to Setup Wizard
-                navigate('/setup');
+                // Success! Redirect to Owner Dashboard
+                navigate('/owner/dashboard');
             }
 
         } catch (error) {

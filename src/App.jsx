@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 
 // ----------------------------------------------------------------------
 // 1. Imports
@@ -8,40 +9,29 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 // Auth
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
-
 import MobileLogin from './pages/auth/MobileLogin';
 import Pricing from './pages/auth/Pricing';
 import FakeCheckout from './pages/auth/FakeCheckout';
-import SetupWizard from './pages/onboarding/SetupWizard';
+import AuthCallback from './pages/auth/AuthCallback';
+import SetupAccount from './pages/auth/SetupAccount';
 
 // Layouts
-import Layout from './components/Layout';
-import CoachLayout from './layouts/CoachLayout';
-// 👇 هنا الخدعة: بنستورد الملف القديم بس بندلعه باسم جديد
+import OwnerLayout from './layouts/OwnerLayout';
 import AthleteLayout from './layouts/StudentLayout';
 
-// Athlete Pages
-import AthleteHome from "./pages/Athlete/AthleteHome";
-import Achievements from "./pages/Athlete/Achievements";
+// Owner Pages
+import OwnerDashboard from './pages/owner/OwnerDashboard';
+import AcademySetup from './pages/owner/AcademySetup';
+import StaffRoster from './pages/owner/StaffRoster';
+import AthletesRoster from './pages/owner/AthletesRoster';
 
-// Lazy Loading (غيرنا أسماء المتغيرات لـ Athlete)
+// Athlete Pages
+import AthleteHome from './pages/Athlete/AthleteHome';
+import Achievements from './pages/Athlete/Achievements';
+
+// Lazy Loading
 const AthleteBilling = React.lazy(() => import('./pages/Athlete/Billing'));
 const AthleteSettings = React.lazy(() => import('./pages/Athlete/Settings'));
-
-// Coach Pages
-import CoachHome from './pages/coach/CoachHome';
-import CoachSchedule from './pages/coach/Schedule';
-import MasterCalendar from './pages/coach/MasterCalendar';
-import SessionCommander from './pages/coach/SessionCommander';
-import Analytics from './pages/coach/management/Analytics';
-import StaffManagement from './pages/coach/management/StaffManagement';
-import FinanceDashboard from './pages/coach/management/FinanceDashboard';
-import Profile from './pages/coach/Profile';
-import CoachSettings from './pages/coach/Settings';
-import Earnings from './pages/coach/Earnings';
-import Support from './pages/coach/Support';
-import Roster from './pages/coach/Roster';
-import SkillEvaluation from './pages/SkillEvaluation';
 
 // Shared
 import Landing from './pages/Landing';
@@ -50,15 +40,16 @@ import SecurityCheckpointPage from './components/SecurityCheckpoint';
 
 // Components
 import ErrorBoundary from './components/ErrorBoundary';
-import GranularErrorBoundary from './components/GranularErrorBoundary';
 import CommandPalette from './components/CommandPalette';
 import AuthGuard from './components/AuthGuard';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
     return (
         <ErrorBoundary>
             <BrowserRouter>
                 <CommandPalette />
+                <Toaster position="top-center" richColors />
                 <Routes>
                     {/* Public Routes */}
                     <Route path="/" element={<Landing />} />
@@ -66,14 +57,52 @@ function App() {
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/athlete/login" element={<Navigate to="/login" replace />} />
                     <Route path="/pricing" element={<Pricing />} />
-                    <Route path="/setup" element={<SetupWizard />} />
                     <Route path="/checkout" element={<FakeCheckout />} />
                     <Route path="/security-checkpoint" element={<SecurityCheckpointPage />} />
 
-                    {/* 🔄 تحويل الروابط القديمة للجديدة */}
+                    {/* Authentication Flow */}
+                    <Route path="/auth/callback" element={<AuthCallback />} />
+                    <Route path="/auth/setup-account" element={<SetupAccount />} />
+
+                    {/* -----------------------------------------------------------------
+                        🛡️ OWNER SETUP ZONE
+                        Special Route: Allows access even if setup is incomplete.
+                        Prop: allowSetup={true}
+                    ----------------------------------------------------------------- */}
+                    <Route element={<ProtectedRoute allowSetup={true} />}>
+                        <Route path="/setup" element={<AcademySetup />} />
+                    </Route>
+
+                    {/* -----------------------------------------------------------------
+                        🏰 OWNER KINGDOM
+                        Standard Protection: Requires Setup to be complete.
+                        Guard will redirect to /setup if not done.
+                        Switching to /owner layout immediately.
+                    ----------------------------------------------------------------- */}
+                    <Route element={<ProtectedRoute />}>
+                        <Route path="/owner" element={<OwnerLayout />}>
+                            <Route index element={<Navigate to="/owner/dashboard" replace />} />
+                            <Route path="dashboard" element={<OwnerDashboard />} />
+
+                            {/* Modules */}
+                            <Route path="academy" element={<div className="p-10 font-bold text-slate-400 text-center">Academy Management</div>} />
+                            <Route path="staff" element={<StaffRoster />} />
+                            <Route path="finance" element={<div className="p-10 font-bold text-slate-400 text-center">Treasury & Finance</div>} />
+                            <Route path="athletes" element={<AthletesRoster />} />
+                            <Route path="schedule" element={<div className="p-10 font-bold text-slate-400 text-center">Class Schedule</div>} />
+                            <Route path="settings" element={<div className="p-10 font-bold text-slate-400 text-center">System Settings</div>} />
+                        </Route>
+                    </Route>
+
+                    {/* COACH ZONE - Placeholder */}
+                    <Route path="/coach" element={<ProtectedRoute />}>
+                        <Route path="*" element={<Navigate to="/owner/dashboard" replace />} />
+                    </Route>
+
+                    {/* 🔄 Legacy Redirects */}
                     <Route path="/student/*" element={<Navigate to="/athlete" replace />} />
 
-                    {/* 🏅 ATHLETE DASHBOARD (SECURED 🛡️) */}
+                    {/* 🏅 ATHLETE DASHBOARD */}
                     <Route path="/athlete" element={
                         <AuthGuard>
                             <AthleteLayout />
@@ -93,29 +122,6 @@ function App() {
                                 <AthleteSettings />
                             </React.Suspense>
                         } />
-                    </Route>
-
-                    {/* 👮 COACH DASHBOARD */}
-                    <Route path="/coach" element={
-                        <GranularErrorBoundary>
-                            <AuthGuard>
-                                <CoachLayout />
-                            </AuthGuard>
-                        </GranularErrorBoundary>
-                    }>
-                        <Route path="home" element={<CoachHome />} />
-                        <Route path="calendar" element={<MasterCalendar />} />
-                        <Route path="schedule" element={<CoachSchedule />} />
-                        <Route path="profile" element={<Profile />} />
-                        <Route path="settings" element={<CoachSettings />} />
-                        <Route path="analytics" element={<Analytics />} />
-                        <Route path="staff" element={<StaffManagement />} />
-                        <Route path="finance" element={<FinanceDashboard />} />
-                        <Route path="roster" element={<Roster />} />
-                        <Route path="skills" element={<SkillEvaluation />} />
-                        <Route path="earnings" element={<Earnings />} />
-                        <Route path="support" element={<Support />} />
-                        <Route path="session/:sessionId" element={<SessionCommander />} />
                     </Route>
 
                     <Route path="*" element={<NotFound />} />
