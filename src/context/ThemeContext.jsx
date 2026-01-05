@@ -3,12 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-    const [theme, setTheme] = useState(() => {
-        // Check localStorage or system preference
-        const storedTheme = localStorage.getItem('theme');
-        if (storedTheme) return storedTheme;
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    });
+    const [theme, setTheme] = useState('light');
 
     useEffect(() => {
         const root = window.document.documentElement;

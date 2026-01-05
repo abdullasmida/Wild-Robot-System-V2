@@ -24,6 +24,8 @@ import OwnerDashboard from './pages/owner/OwnerDashboard';
 import AcademySetup from './pages/owner/AcademySetup';
 import StaffRoster from './pages/owner/StaffRoster';
 import AthletesRoster from './pages/owner/AthletesRoster';
+import OwnerProfile from './pages/owner/OwnerProfile';
+import SchedulePage from './pages/SchedulePage';
 
 // Athlete Pages
 import AthleteHome from './pages/Athlete/AthleteHome';
@@ -37,6 +39,7 @@ const AthleteSettings = React.lazy(() => import('./pages/Athlete/Settings'));
 import Landing from './pages/Landing';
 import NotFound from './pages/NotFound';
 import SecurityCheckpointPage from './components/SecurityCheckpoint';
+import ComingSoon from './components/ComingSoon';
 
 // Components
 import ErrorBoundary from './components/ErrorBoundary';
@@ -85,12 +88,15 @@ function App() {
                             <Route path="dashboard" element={<OwnerDashboard />} />
 
                             {/* Modules */}
-                            <Route path="academy" element={<div className="p-10 font-bold text-slate-400 text-center">Academy Management</div>} />
+                            <Route path="academy" element={<ComingSoon title="Academy Management" />} />
                             <Route path="staff" element={<StaffRoster />} />
-                            <Route path="finance" element={<div className="p-10 font-bold text-slate-400 text-center">Treasury & Finance</div>} />
+                            <Route path="treasury" element={<ComingSoon title="Treasury & Finance" />} />
                             <Route path="athletes" element={<AthletesRoster />} />
-                            <Route path="schedule" element={<div className="p-10 font-bold text-slate-400 text-center">Class Schedule</div>} />
-                            <Route path="settings" element={<div className="p-10 font-bold text-slate-400 text-center">System Settings</div>} />
+                            <Route path="schedule" element={<SchedulePage />} />
+                            <Route path="feed" element={<ComingSoon title="Live Feed" />} />
+                            <Route path="settings" element={<ComingSoon title="System Settings" />} />
+                            <Route path="profile" element={<OwnerProfile />} />
+
                         </Route>
                     </Route>
 
