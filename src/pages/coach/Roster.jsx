@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Filter, Plus, Users, MoreHorizontal, Mail, Phone, UserPlus } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
-import AddAthleteModal from '../../components/AddAthleteModal';
+import RecruitHeroesModal from '../../components/modals/RecruitHeroesModal';
 
 export default function Roster() {
     const [loading, setLoading] = useState(true);
@@ -174,10 +174,9 @@ export default function Roster() {
             )}
 
             {/* --- MODAL --- */}
-            <AddAthleteModal
+            <RecruitHeroesModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                academyName={coachProfile?.academy_name}
                 onSuccess={() => fetchRoster()}
             />
 

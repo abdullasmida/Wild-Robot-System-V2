@@ -3,13 +3,18 @@ import { startOfWeek, addDays, setHours, addMinutes, format, startOfMonth, endOf
 export interface Profile {
     id: string;
     full_name: string;
-    avatar_url: string;
+    first_name?: string; // Real DB field
+    last_name?: string; // Real DB field
+    email?: string;
+    avatar_url?: string;
+    avatar_color?: string; // New field
     role: string;
     // New fields
     employmentType?: 'full_time' | 'part_time';
     dailyHoursLimit?: number;
-    salary?: number;
-    hourlyRate?: number;
+    hourlyRate?: number; // Legacy match
+    hourly_rate?: number; // Real DB match
+    academy_id?: string;
 }
 
 export interface Batch {

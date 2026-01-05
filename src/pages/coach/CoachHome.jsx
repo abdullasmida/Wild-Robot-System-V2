@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Plus, Users, DollarSign, Clock, Calendar,
     UserPlus, ClipboardCheck, MessageSquare, CreditCard,
@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import Modal from '../../components/ui/Modal';
-import AddAthleteModal from '../../components/AddAthleteModal';
+import RecruitHeroesModal from '../../components/modals/RecruitHeroesModal';
 
 export default function CoachHome() {
     const navigate = useNavigate();
@@ -354,10 +354,9 @@ export default function CoachHome() {
 
             {/* --- MODALS --- */}
 
-            <AddAthleteModal
+            <RecruitHeroesModal
                 isOpen={showAddAthleteModal}
                 onClose={() => setShowAddAthleteModal(false)}
-                academyName={profile?.academy_name}
                 onSuccess={() => {
                     // Refresh data logic if needed
                     window.location.reload();

@@ -1,45 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '../../context/UserContext';
+import UserAvatar from '../ui/UserAvatar';
 
 export default function SidebarUserItem() {
     const navigate = useNavigate();
-    const [user, setUser] = useState(null);
+    const { profile } = useUser();
 
-    useEffect(() => {
-        async function getUser() {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-                setUser(data);
-            }
-        }
-        getUser();
-    }, []);
-
-    return (
-        <div
-            onClick={() => navigate('/owner/profile')}
-            className="mt-auto pt-4 border-t border-slate-800/50 cursor-pointer group px-2"
-        >
-            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/50 transition-all duration-200">
-                <div className="relative">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md border border-slate-700 overflow-hidden shrink-0">
-                        {user?.avatar_url ? (
-                            <img src={user.avatar_url} alt="User" className="w-full h-full object-cover" />
-                        ) : (
-                            <span>{user?.first_name?.[0] || 'O'}</span>
-                        )}
-                    </div>
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-slate-950 rounded-full"></span>
-                </div>
-                <div className="flex-1 min-w-0 transition-opacity duration-300">
-                    <p className="text-sm font-medium text-slate-200 truncate group-hover:text-white">
-                        {user?.first_name || 'Owner'} {user?.last_name}
-                    </p>
-                    <p className="text-xs text-slate-500 truncate group-hover:text-blue-400">View Profile</p>
+    if (!profile) {
+        return (
+            <div className="flex items-center gap-3 p-2 animate-pulse w-full">
+                <div className="w-10 h-10 rounded-full bg-slate-200" />
+                <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-slate-200 rounded w-2/3" />
+                    <div className="h-2 bg-slate-200 rounded w-1/2" />
                 </div>
             </div>
-        </div>
+        );
+    }
+
+    // Fallback if no profile is found but not loading (should theoretically not happen if auth is strictly checked, but safe to have)
+    const displayProfile = profile || {
+        first_name: 'Guest',
+        last_name: 'User',
+        role: 'visitor',
+        email: 'guest@example.com'
+    };
+
+    return (
+        <button
+            onClick={() => navigate('/owner/profile')}
+            className="flex items-center gap-3 w-full p-2 hover:bg-white rounded-lg transition-colors text-left group border border-transparent hover:border-slate-200 hover:shadow-sm"
+        >
+            <UserAvatar
+                profile={displayProfile}
+                size="md"
+                className="ring-1 ring-slate-200 group-hover:ring-slate-300 transition-colors"
+                showTooltip={false}
+            />
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate text-slate-700 group-hover:text-slate-900">
+                    {displayProfile.first_name || 'User'} {displayProfile.last_name || ''}
+                </p>
+                <p className="text-xs text-slate-500 truncate">
+                    {displayProfile.role === 'owner' ? 'Academy Owner' : (displayProfile.role === 'visitor' ? 'Guest Access' : 'Staff Member')}
+                </p>
+            </div>
+        </button>
     );
 }

@@ -4,7 +4,7 @@ import {
     LayoutDashboard,
     CalendarDays,
     Activity,
-    Users,
+    Contact,
     Trophy,
     Wallet,
     Settings,
@@ -23,7 +23,10 @@ import { twMerge } from 'tailwind-merge';
 // Imports for Modals
 import UniversalAddModal from '../components/modals/UniversalAddModal';
 import NewShiftModal from '../components/modals/NewShiftModal';
-import NotificationsPopover from '../components/notifications/NotificationsPopover';
+import RecruitHeroesModal from '../components/modals/RecruitHeroesModal';
+import NotificationsDrawer from '../components/notifications/NotificationsDrawer';
+import SidebarUserItem from '../components/dashboard/SidebarUserItem';
+import { useUser } from '../context/UserContext';
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -33,7 +36,7 @@ const SIDEBAR_ITEMS = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/owner/dashboard' },
     { label: 'Schedule', icon: CalendarDays, path: '/owner/schedule' },
     { label: 'Live Feed', icon: Activity, path: '/owner/feed' },
-    { label: 'Staff', icon: Users, path: '/owner/staff' },
+    { label: 'Team Directory', icon: Contact, path: '/owner/staff' },
     { label: 'Heroes', icon: Trophy, path: '/owner/athletes' },
     { label: 'Treasury', icon: Wallet, path: '/owner/treasury' },
     { label: 'Settings', icon: Settings, path: '/owner/settings' },
@@ -49,6 +52,7 @@ const OwnerLayout = () => {
     const [isUniversalModalOpen, setIsUniversalModalOpen] = useState(false);
     const [universalModalTab, setUniversalModalTab] = useState(0); // 0 = Staff (Manual), 1 = Import... Logic adjusted in Modal
 
+    const [isAthleteModalOpen, setIsAthleteModalOpen] = useState(false);
     const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
 
     // Notification State
@@ -58,11 +62,13 @@ const OwnerLayout = () => {
     const pathSegments = location.pathname.split('/').filter(Boolean);
 
     // Handlers
-    const openUniversalModal = (tabIndex) => {
+    const openUniversalModal = (tabIndex: number) => {
         setIsQuickActionOpen(false);
         setUniversalModalTab(tabIndex);
         setIsUniversalModalOpen(true);
     };
+
+    const { academy } = useUser(); // Get academy from context
 
     return (
         <div className="flex h-screen bg-slate-50 text-slate-900 font-sans selection:bg-emerald-500/30">
@@ -74,6 +80,12 @@ const OwnerLayout = () => {
                 initialTab={universalModalTab}
             />
             <NewShiftModal isOpen={isShiftModalOpen} onClose={() => setIsShiftModalOpen(false)} />
+            <RecruitHeroesModal
+                isOpen={isAthleteModalOpen}
+                onClose={() => setIsAthleteModalOpen(false)}
+                onSuccess={() => { }}
+            />
+            <NotificationsDrawer isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
 
             {/* Sidebar (Desktop) */}
             <aside className="hidden md:flex w-64 flex-col border-r border-slate-200 bg-white z-30">
@@ -111,17 +123,7 @@ const OwnerLayout = () => {
 
                 {/* User Profile Stub */}
                 <div className="p-4 border-t border-slate-200 bg-slate-50/50">
-                    <button className="flex items-center gap-3 w-full p-2 hover:bg-white rounded-lg transition-colors text-left group border border-transparent hover:border-slate-200 hover:shadow-sm">
-                        <img
-                            src="https://i.pravatar.cc/150?u=owner"
-                            alt="Owner"
-                            className="w-9 h-9 rounded-full border border-slate-200 group-hover:border-slate-300 transition-colors"
-                        />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate text-slate-700 group-hover:text-slate-900">Alex Director</p>
-                            <p className="text-xs text-slate-500 truncate">Wild Robot Gym</p>
-                        </div>
-                    </button>
+                    <SidebarUserItem />
                 </div>
             </aside>
 
@@ -157,7 +159,7 @@ const OwnerLayout = () => {
                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 hidden md:block">
                         <button className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-slate-200 bg-slate-50/50 hover:bg-white transition-all text-sm font-medium hover:border-slate-300 group shadow-sm hover:shadow">
                             <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                            <span className="text-slate-700">{selectedBranch}</span>
+                            <span className="text-slate-700">{academy?.name || 'My Academy'}</span>
                             <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors" />
                         </button>
                     </div>
@@ -166,7 +168,7 @@ const OwnerLayout = () => {
                     <div className="flex items-center gap-3">
                         <div className="relative">
                             <button
-                                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                                onClick={() => setIsNotificationsOpen(true)}
                                 className={cn(
                                     "relative p-2 rounded-lg transition-colors",
                                     isNotificationsOpen ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-900 hover:bg-slate-100"
@@ -175,8 +177,6 @@ const OwnerLayout = () => {
                                 <Bell className="w-5 h-5" />
                                 <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
                             </button>
-                            {/* Notification Popover */}
-                            <NotificationsPopover isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
                         </div>
 
                         {/* Quick Action FAB & Dropdown */}
@@ -199,18 +199,24 @@ const OwnerLayout = () => {
                                     <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-2xl z-20 overflow-hidden animate-in fade-in slide-in-from-top-2">
                                         <div className="p-1">
                                             <button
-                                                onClick={() => openUniversalModal(0)}
-                                                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors text-left font-medium"
-                                            >
-                                                <UserPlus className="w-4 h-4 text-emerald-500" />
-                                                Add Staff
-                                            </button>
-                                            <button
-                                                onClick={() => openUniversalModal(0)} // Reusing same modal for now as simpler
+                                                onClick={() => {
+                                                    setIsQuickActionOpen(false);
+                                                    setIsAthleteModalOpen(true);
+                                                }}
                                                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors text-left font-medium"
                                             >
                                                 <Shield className="w-4 h-4 text-blue-500" />
                                                 Add Athlete
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setIsQuickActionOpen(false);
+                                                    openUniversalModal(0);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors text-left font-medium"
+                                            >
+                                                <UserPlus className="w-4 h-4 text-emerald-500" />
+                                                Add Staff
                                             </button>
                                             <button
                                                 onClick={() => { setIsQuickActionOpen(false); setIsShiftModalOpen(true); }}
