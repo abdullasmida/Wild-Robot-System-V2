@@ -15,7 +15,8 @@ import {
     ChevronRight,
     UserPlus,
     CalendarPlus,
-    Shield
+    Shield,
+    LogOut
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -26,7 +27,9 @@ import NewShiftModal from '../components/modals/NewShiftModal';
 import RecruitHeroesModal from '../components/modals/RecruitHeroesModal';
 import NotificationsDrawer from '../components/notifications/NotificationsDrawer';
 import SidebarUserItem from '../components/dashboard/SidebarUserItem';
-import { useUser } from '../context/UserContext';
+import { useAuthStore } from '@/stores/useAuthStore';
+
+// ... (other imports)
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -41,7 +44,6 @@ const SIDEBAR_ITEMS = [
     { label: 'Treasury', icon: Wallet, path: '/owner/treasury' },
     { label: 'Settings', icon: Settings, path: '/owner/settings' },
 ];
-
 const OwnerLayout = () => {
     const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -68,7 +70,8 @@ const OwnerLayout = () => {
         setIsUniversalModalOpen(true);
     };
 
-    const { academy } = useUser(); // Get academy from context
+    const { user } = useAuthStore(); // Get user from store
+    const academy = user?.academy; // Derive academy from user profile
 
     return (
         <div className="flex h-screen bg-slate-50 text-slate-900 font-sans selection:bg-emerald-500/30">
@@ -119,6 +122,21 @@ const OwnerLayout = () => {
                             </Link>
                         );
                     })}
+
+                    {/* Sign Out Button */}
+                    <button
+                        onClick={async () => {
+                            await useAuthStore.getState().signOut();
+                            window.location.href = '/login';
+                        }}
+                        className={cn(
+                            "flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium group relative overflow-hidden mt-4",
+                            "border-l-4 border-transparent text-slate-500 hover:text-red-600 hover:bg-red-50 hover:translate-x-1 transition-all duration-200"
+                        )}
+                    >
+                        <LogOut className="w-5 h-5 text-slate-400 group-hover:text-red-500 transition-colors relative z-10" />
+                        <span className="relative z-10">Sign Out</span>
+                    </button>
                 </nav>
 
                 {/* User Profile Stub */}

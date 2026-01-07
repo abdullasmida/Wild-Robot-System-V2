@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, ArrowRight, CheckCircle, AlertCircle, Loader2, Star, ShieldCheck } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 const Signup = () => {
     const navigate = useNavigate();
+    const { checkSession } = useAuthStore();
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
 
@@ -44,7 +46,26 @@ const Signup = () => {
             if (error) throw error;
 
             if (data.user) {
-                // Success! Redirect to Owner Dashboard
+                // Success! Force session refresh so ProtectedRoute knows we are logged in
+                await checkSession();
+
+                // AUTOMATICALLY MARK AS SETUP for Owners (since they just set their password)
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({
+                        setup_completed: true,
+                        first_name: formData.firstName,
+                        last_name: formData.lastName,
+                        full_name: `${formData.firstName} ${formData.lastName}`.trim(),
+                        role: 'owner' // Ensure role is set
+                    })
+                    .eq('id', data.user.id);
+
+                if (updateError) {
+                    console.error("Failed to auto-complete setup:", updateError);
+                    // Continue anyway, worst case they see the setup screen but it won't break
+                }
+
                 navigate('/owner/dashboard');
             }
 

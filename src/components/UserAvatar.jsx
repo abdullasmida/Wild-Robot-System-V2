@@ -19,15 +19,30 @@ export default function UserAvatar({ user, profile, size = 'md', className }) {
         xl: 32
     };
 
-    // 2. Get Initials
-    const initials = profile?.full_name
-        ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-        : (user?.email?.charAt(0).toUpperCase() || "WR");
+    // 2. Get Initials (Robust)
+    const getInitials = () => {
+        if (profile?.first_name && profile?.last_name) {
+            return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+        }
+        if (profile?.full_name) {
+            return profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        }
+        return user?.email?.substring(0, 2).toUpperCase() || "WR";
+    };
+    const initials = getInitials();
 
     // 3. Check for Owner Role
     const isOwner = profile?.role === 'owner' || profile?.role === 'admin' || profile?.role === 'super_admin';
 
-    // 4. Random Gradient for Initials (Consistent based on name length)
+    // 4. Dynamic Background Color
+    // Priority: Profile Custom Color -> Academy Brand Color -> Random Gradient (Fallback)
+    const bgColorStyle = profile?.avatar_color
+        ? { backgroundColor: profile.avatar_color }
+        : (profile?.academy?.brand_color ? { backgroundColor: profile.academy.brand_color } : {});
+
+    const hasCustomColor = profile?.avatar_color || profile?.academy?.brand_color;
+
+    // Fallback Gradients if no custom color
     const gradients = [
         "from-emerald-400 to-emerald-600",
         "from-blue-400 to-blue-600",
@@ -35,27 +50,30 @@ export default function UserAvatar({ user, profile, size = 'md', className }) {
         "from-amber-400 to-amber-600",
         "from-rose-400 to-rose-600"
     ];
-    const gradientIndex = (profile?.full_name?.length || 0) % gradients.length;
+    const gradientIndex = (initials.charCodeAt(0) + initials.charCodeAt(1)) % gradients.length;
     const bgGradient = gradients[gradientIndex];
 
     return (
         <div className={clsx("relative inline-block", className)}>
-            <div className={clsx(
-                "rounded-2xl flex items-center justify-center font-black text-white shadow-lg ring-2 ring-white overflow-hidden relative",
-                sizeClasses[size],
-                profile?.avatar_url ? "bg-slate-100" : `bg-gradient-to-br ${bgGradient}`
-            )}>
+            <div
+                className={clsx(
+                    "rounded-2xl flex items-center justify-center font-black text-white shadow-lg ring-2 ring-white/50 overflow-hidden relative transition-all",
+                    sizeClasses[size],
+                    !profile?.avatar_url && !hasCustomColor && `bg-gradient-to-br ${bgGradient}`
+                )}
+                style={!profile?.avatar_url && hasCustomColor ? bgColorStyle : {}}
+            >
                 {profile?.avatar_url ? (
                     <img
                         src={profile.avatar_url}
-                        alt={profile.full_name || "User"}
+                        alt={getInitials()}
                         className="h-full w-full object-cover"
                     />
                 ) : (
-                    <span className="z-10">{initials}</span>
+                    <span className="z-10 tracking-widest text-shadow-sm">{initials}</span>
                 )}
 
-                {/* Subtle pattern overlay for initials */}
+                {/* Glassy Overlay for text readability */}
                 {!profile?.avatar_url && (
                     <div className="absolute inset-0 bg-white/10 mix-blend-overlay"></div>
                 )}

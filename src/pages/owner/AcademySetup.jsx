@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
+import { useAuthStore } from '@/stores/useAuthStore';
 import {
     Building2, MapPin, ArrowRight, CheckCircle,
     GraduationCap, BicepsFlexed, Banknote, Palette,
@@ -116,20 +117,25 @@ const AcademySetup = () => {
             if (upsertError) throw upsertError;
             log("✅ Academy Created:", academy.id);
 
-            // C. Link Profile
+            // C. Link Profile & Mark Setup Complete
             log("Linking Profile...");
             const { error: profileError } = await supabase
                 .from('profiles')
                 .update({
                     academy_id: academy.id,
-                    role: 'owner'
+                    role: 'owner',
+                    setup_completed: true // CRITICAL: Mark as complete to pass AuthGuard
                 })
                 .eq('id', user.id);
 
             if (profileError) throw profileError;
-            log("✅ Profile Linked.");
+            log("✅ Profile Linked & Setup Marked Complete.");
 
-            // D. Success
+            // D. Force Session Sync
+            // Syncs the new 'setup_completed' status to the global store
+            await useAuthStore.getState().checkSession();
+
+            // E. Success Redirect
             window.location.href = '/owner/dashboard';
 
         } catch (err) {

@@ -1,6 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
+// ⚠️ DEPRECATED: Do not import from here in new files.
+// Use import { supabase } from '@/lib/supabase' instead.
+// This file exists only to maintain backward compatibility with legacy components
+// and prevent multiple instances of the Supabase client.
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+import { supabase } from './lib/supabase';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export { supabase };

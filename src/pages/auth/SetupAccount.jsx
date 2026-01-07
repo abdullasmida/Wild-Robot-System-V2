@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import { Lock, User, ArrowRight, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 const SetupAccount = () => {
     const navigate = useNavigate();
@@ -16,20 +17,12 @@ const SetupAccount = () => {
         confirmPassword: ''
     });
 
-    useEffect(() => {
-        const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                navigate('/login');
-                return;
-            }
+    const { user: profile, checkSession } = useAuthStore();
 
-            // Check if already setup
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('setup_completed, role')
-                .eq('id', session.user.id)
-                .single();
+    useEffect(() => {
+        const init = async () => {
+            // Ensure session is fresh
+            await checkSession();
 
             if (profile?.setup_completed) {
                 toast.info("Account already setup. Redirecting...");
@@ -38,8 +31,8 @@ const SetupAccount = () => {
                 setLoading(false);
             }
         };
-        checkSession();
-    }, []);
+        init();
+    }, [profile, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

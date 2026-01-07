@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '../../context/UserContext';
+import { useAuthStore } from '@/stores/useAuthStore';
 import UserAvatar from '../ui/UserAvatar';
 
 export default function SidebarUserItem() {
     const navigate = useNavigate();
-    const { profile } = useUser();
+    const { user: profile } = useAuthStore();
 
     if (!profile) {
         return (

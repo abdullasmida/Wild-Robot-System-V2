@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { supabase } from '../../supabaseClient';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { Trophy, CheckCircle, Loader2, PlayCircle, Star, ArrowRight } from 'lucide-react';
 
 export default function AcademyWizard() {
@@ -15,6 +17,7 @@ export default function AcademyWizard() {
         lastName: '',
         email: '',
         password: '',
+        confirmPassword: '',
         source: '' // "Where did you hear about us?"
     });
 
@@ -22,6 +25,13 @@ export default function AcademyWizard() {
         e.preventDefault();
         setLoading(true);
         setError(null);
+
+        // 1. Validation
+        if (formData.password !== formData.confirmPassword) {
+            setError("Passwords do not match");
+            setLoading(false);
+            return;
+        }
 
         try {
             const { data, error } = await supabase.auth.signUp({
@@ -47,21 +57,38 @@ export default function AcademyWizard() {
 
                 // Note: Triggers usually handle profile creation on signup, 
                 // but if we need manual profile creation:
+                // 3. Create/Update Profile with Identity Data
+                // We generate a random avatar color for the user if not set by DB default
+                const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
+
                 const { error: profileError } = await supabase
                     .from('profiles')
                     .update({
-                        role: 'coach', // Default to coach/admin
+                        role: 'owner', // Default role for new Academy Creators
                         first_name: formData.firstName,
                         last_name: formData.lastName,
-                        onboarding_step: 1 // Indicate they need to finish setup
+                        avatar_color: randomColor, // Bind the new color column
+                        onboarding_step: 1
                     })
                     .eq('id', data.user.id);
+
+                if (profileError) {
+                    console.error("Profile Update Error:", profileError);
+                    // Non-blocking error, user can still proceed
+                }
 
                 // If update fails (e.g. row doesn't exist yet due to race condition), 
                 // we might need an insert or rely on DB triggers. 
                 // Assuming DB trigger creates the row, update is fine.
 
-                navigate('/coach/home');
+                // Force a session refresh so useAuthStore gets the new profile
+                // This prevents ProtectedRoute from seeing "null" and kicking us to /login
+                await useAuthStore.getState().checkSession();
+
+                // Show Success Toast
+                toast.success("Welcome, Commander!");
+
+                navigate('/setup');
             } else {
                 alert("Account created! Please check your email to confirm.");
             }
@@ -167,7 +194,7 @@ export default function AcademyWizard() {
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium"
-                                placeholder="coach@academy.com"
+                                placeholder="owner@academy.com"
                                 required
                             />
                         </div>
@@ -181,6 +208,20 @@ export default function AcademyWizard() {
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                 className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium"
                                 placeholder="Min. 8 characters"
+                                minLength={8}
+                                required
+                            />
+                        </div>
+
+                        {/* Confirm Password */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Confirm Password</label>
+                            <input
+                                type="password"
+                                value={formData.confirmPassword}
+                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium"
+                                placeholder="Confirm your password"
                                 minLength={8}
                                 required
                             />
