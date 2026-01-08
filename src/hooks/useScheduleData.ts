@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '@/lib/supabase';
 import { startOfWeek, endOfWeek } from 'date-fns';
 
 export interface ScheduleData {
     branches: { id: string; name: string }[];
+    shifts: any[];
+    coaches: any[];
     settings: { weekStartDay: number; workingHours: any };
     stats: {
         totalBudget: number;
@@ -21,6 +23,8 @@ export interface ScheduleData {
 export function useScheduleData(currentDate: Date, academyId: string | null) {
     const [data, setData] = useState<ScheduleData>({
         branches: [],
+        shifts: [],
+        coaches: [],
         settings: { weekStartDay: 1, workingHours: {} },
         stats: { totalBudget: 0, actualCost: 0, totalHours: 0 },
         publishStatus: { hasDrafts: false, draftCount: 0 },
@@ -44,12 +48,35 @@ export function useScheduleData(currentDate: Date, academyId: string | null) {
             // Should seed if empty? Ideally handled by onboarding, but for now just return what exists.
 
             // 2. Fetch Shifts (Visible Week)
+            // 2. Fetch Shifts (Visible Week) with joins
             const { data: shifts } = await supabase
                 .from('staff_shifts')
-                .select('id, status, cost_estimate, start_time, end_time')
+                .select(`
+                    id, 
+                    status, 
+                    cost_estimate, 
+                    start_time, 
+                    end_time, 
+                    location_id,
+                    staff_id,
+                    staff:staff_id ( id, first_name, last_name, avatar_url, role )
+                `)
                 .eq('academy_id', academyId)
                 .gte('start_time', start)
                 .lte('start_time', end);
+
+            // 3. Fetch Coaches (for Sidebar)
+            const { data: coaches } = await supabase
+                .from('staff_details')
+                .select(`
+                    profile_id,
+                    specialization,
+                    job_title,
+                    availability,
+                    profile:profile_id ( id, first_name, last_name, avatar_url, role )
+                `)
+                .eq('academy_id', academyId);
+
 
             // 3. Calculate Stats
             let totalBudget = 0;
@@ -71,6 +98,8 @@ export function useScheduleData(currentDate: Date, academyId: string | null) {
 
             setData({
                 branches: branches || [],
+                shifts: shifts || [],
+                coaches: coaches || [],
                 settings: { weekStartDay: 1, workingHours: {} },
                 stats: {
                     totalBudget,

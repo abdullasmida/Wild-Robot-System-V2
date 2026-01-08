@@ -28,6 +28,7 @@ import RecruitHeroesModal from '../components/modals/RecruitHeroesModal';
 import NotificationsDrawer from '../components/notifications/NotificationsDrawer';
 import SidebarUserItem from '../components/dashboard/SidebarUserItem';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useAppStore } from '@/stores/useAppStore';
 
 // ... (other imports)
 
@@ -71,6 +72,7 @@ const OwnerLayout = () => {
     };
 
     const { user } = useAuthStore(); // Get user from store
+    const { viewMode } = useAppStore();
     const academy = user?.academy; // Derive academy from user profile
 
     return (
@@ -81,6 +83,7 @@ const OwnerLayout = () => {
                 isOpen={isUniversalModalOpen}
                 onClose={() => setIsUniversalModalOpen(false)}
                 initialTab={universalModalTab}
+                academyId={academy?.id}
             />
             <NewShiftModal isOpen={isShiftModalOpen} onClose={() => setIsShiftModalOpen(false)} />
             <RecruitHeroesModal
@@ -94,13 +97,21 @@ const OwnerLayout = () => {
             <aside className="hidden md:flex w-64 flex-col border-r border-slate-200 bg-white z-30">
                 {/* Logo */}
                 <div className="h-16 flex items-center px-6 border-b border-slate-200">
-                    <div className="w-8 h-8 bg-gradient-to-tr from-emerald-500 to-cyan-500 rounded-lg mr-3 shadow-lg shadow-emerald-500/20" />
-                    <span className="font-bold text-lg tracking-tight text-slate-900">Wild Robot</span>
+                    <Link to="/owner/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                        <div className="w-8 h-8 bg-gradient-to-tr from-emerald-500 to-cyan-500 rounded-lg mr-3 shadow-lg shadow-emerald-500/20" />
+                        <span className="font-bold text-lg tracking-tight text-slate-900">Wild Robot</span>
+                    </Link>
                 </div>
 
                 {/* Navigation */}
                 <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                    {SIDEBAR_ITEMS.map((item) => {
+                    {SIDEBAR_ITEMS.filter(item => {
+                        if (viewMode === 'floor') {
+                            // In Floor Mode, hide admin-heavy items
+                            return ['Dashboard', 'Schedule', 'Live Feed', 'Heroes'].includes(item.label);
+                        }
+                        return true;
+                    }).map((item) => {
                         const isActive = location.pathname.startsWith(item.path);
                         const Icon = item.icon;
                         return (

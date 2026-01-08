@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { useUser } from '../context/UserContext';
+import { useUser } from '@/context/UserContext';
 import { supabase } from '../supabaseClient';
 import ClockInWidget from '../components/coach/ClockInWidget';
 import SidebarUserItem from '../components/dashboard/SidebarUserItem';
@@ -45,11 +45,13 @@ const CoachLayout = () => {
             <aside className="hidden md:flex w-64 flex-col border-r border-slate-800 bg-slate-900 z-30">
                 {/* Logo */}
                 <div className="h-20 flex items-center px-6 border-b border-slate-800">
-                    <div className="w-8 h-8 bg-gradient-to-tr from-emerald-500 to-emerald-300 rounded-lg mr-3 shadow-[0_0_12px_rgba(16,185,129,0.4)]" />
-                    <div>
-                        <span className="font-bold text-lg tracking-tight text-white block leading-none">Wild Robot</span>
-                        <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Coach Portal</span>
-                    </div>
+                    <Link to="/coach/dashboard" className="flex items-center hover:opacity-80 transition-opacity">
+                        <div className="w-8 h-8 bg-gradient-to-tr from-emerald-500 to-emerald-300 rounded-lg mr-3 shadow-[0_0_12px_rgba(16,185,129,0.4)]" />
+                        <div>
+                            <span className="font-bold text-lg tracking-tight text-white block leading-none">Wild Robot</span>
+                            <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Coach Portal</span>
+                        </div>
+                    </Link>
                 </div>
 
                 {/* Navigation */}

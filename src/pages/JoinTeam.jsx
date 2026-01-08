@@ -82,8 +82,44 @@ const JoinTeam = () => {
                     .update({ status: 'accepted' })
                     .eq('id', invitation.id);
 
-                // Redirect Coach to Dashboard
-                navigate('/coach/home');
+                // D. If Athlete, link to the pre-created athlete record
+                if (invitation.role === 'athlete') {
+                    const { error: linkError } = await supabase
+                        .from('athletes')
+                        .update({ profile_id: userId })
+                        .eq('email', invitation.email)
+                        .eq('academy_id', invitation.academy_id);
+
+                    if (linkError) console.error("Failed to link athlete record", linkError);
+                }
+
+                // E. If Staff (Coach/Head Coach), create staff_details
+                if (invitation.role === 'coach' || invitation.role === 'head_coach') {
+                    const specialization = invitation.metadata?.sport || '';
+                    const baseRole = invitation.role.replace('_', ' ');
+                    const fullJobTitle = specialization
+                        ? `${specialization} ${baseRole}`.replace(/\b\w/g, l => l.toUpperCase()) // Capitalize
+                        : baseRole.replace(/\b\w/g, l => l.toUpperCase());
+
+                    const { error: staffError } = await supabase
+                        .from('staff_details')
+                        .insert({
+                            profile_id: userId,
+                            academy_id: invitation.academy_id,
+                            job_title: fullJobTitle
+                        });
+
+                    if (staffError) console.error("Failed to create staff details", staffError);
+                }
+
+                // Redirect based on role
+                if (invitation.role === 'athlete') {
+                    navigate('/athlete');
+                } else if (invitation.role === 'owner') {
+                    navigate('/owner/dashboard');
+                } else {
+                    navigate('/coach/home');
+                }
             }
 
         } catch (err) {
@@ -122,7 +158,13 @@ const JoinTeam = () => {
                 <div className="p-8">
                     <div className="mb-6 bg-emerald-50 p-4 rounded-xl border border-emerald-100">
                         <span className="text-xs font-bold text-emerald-600 uppercase tracking-wide">Role Assigned</span>
-                        <div className="text-lg font-bold text-slate-800 capitalize">{invitation?.role.replace('_', ' ')}</div>
+                        <div className="text-lg font-bold text-slate-800 capitalize">
+                            {/* Display Specialization if available */}
+                            {invitation?.metadata?.sport
+                                ? `${invitation.metadata.sport} ${invitation.role.replace('_', ' ')}`
+                                : invitation?.role.replace('_', ' ')
+                            }
+                        </div>
                         <div className="text-sm text-slate-500 mt-1">{invitation?.email}</div>
                     </div>
 

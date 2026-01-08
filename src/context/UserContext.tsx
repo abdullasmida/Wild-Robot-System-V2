@@ -1,12 +1,26 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
+import { Profile, Academy } from '@/types/custom';
 
-const UserContext = createContext();
+interface UserContextType {
+    user: User | null;
+    profile: Profile | null;
+    academy: Academy | null;
+    loading: boolean;
+    refreshProfile: () => Promise<void>;
+}
 
-export const UserProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [profile, setProfile] = useState(null);
-    const [academy, setAcademy] = useState(null);
+const UserContext = createContext<UserContextType | undefined>(undefined);
+
+interface UserProviderProps {
+    children: ReactNode;
+}
+
+export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
+    const [user, setUser] = useState<User | null>(null);
+    const [profile, setProfile] = useState<Profile | null>(null);
+    const [academy, setAcademy] = useState<Academy | null>(null);
     const [loading, setLoading] = useState(true);
 
     // Function to fetch data and update state
@@ -83,4 +97,10 @@ export const UserProvider = ({ children }) => {
     );
 };
 
-export const useUser = () => useContext(UserContext);
+export const useUser = (): UserContextType => {
+    const context = useContext(UserContext);
+    if (!context) {
+        throw new Error('useUser must be used within a UserProvider');
+    }
+    return context;
+};

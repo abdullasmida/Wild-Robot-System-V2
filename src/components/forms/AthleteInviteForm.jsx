@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     User, Phone, Heart, Trash2, Plus,
-    Sparkles, AlertCircle, Save
+    Sparkles, AlertCircle, Save, Mail, Briefcase, Medal
 } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import { toast } from 'sonner';
@@ -9,13 +9,20 @@ import { toast } from 'sonner';
 const AthleteInviteForm = ({ onSuccess, onCancel }) => {
     const [loading, setLoading] = useState(false);
 
+    // Data Sources
+    const [coaches, setCoaches] = useState([]);
+    const [levels, setLevels] = useState([]);
+
     // Batch State
     const [entries, setEntries] = useState([
         {
             id: Date.now(),
             name: '',
+            email: '',
             gender: 'male',
             dob: '2015-01-01',
+            coachId: '',
+            levelId: '',
             guardianName: '',
             guardianPhone: '',
             relationship: 'parent',
@@ -25,6 +32,35 @@ const AthleteInviteForm = ({ onSuccess, onCancel }) => {
 
     const MEDICAL_TAGS = ['Asthma', 'Diabetes', 'Epilepsy', 'Nut Allergy', 'Injury History'];
 
+    // --- Init ---
+    useEffect(() => {
+        const fetchData = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Get Academy ID first
+            const { data: profile } = await supabase.from('profiles').select('academy_id').eq('id', user.id).single();
+            if (!profile?.academy_id) return;
+
+            // Fetch Coaches
+            const { data: coachList } = await supabase
+                .from('profiles')
+                .select('id, full_name')
+                .eq('academy_id', profile.academy_id)
+                .in('role', ['coach', 'head_coach']);
+            setCoaches(coachList || []);
+
+            // Fetch Levels
+            const { data: levelList } = await supabase
+                .from('levels')
+                .select('id, name')
+                .eq('academy_id', profile.academy_id)
+                .order('order_index');
+            setLevels(levelList || []);
+        };
+        fetchData();
+    }, []);
+
     // --- Actions ---
 
     const addRow = () => {
@@ -33,8 +69,11 @@ const AthleteInviteForm = ({ onSuccess, onCancel }) => {
             {
                 id: Date.now(),
                 name: '',
+                email: '',
                 gender: 'male',
                 dob: '2015-01-01',
+                coachId: '',
+                levelId: '',
                 guardianName: '',
                 guardianPhone: '',
                 relationship: 'parent',
@@ -101,6 +140,7 @@ const AthleteInviteForm = ({ onSuccess, onCancel }) => {
                             academy_id: profile.academy_id,
                             name: entry.guardianName,
                             phone: entry.guardianPhone,
+                            email: entry.email, // Store parent/athlete email here too if needed, or primarily in athlete
                             relationship_type: entry.relationship
                         })
                         .select()
@@ -114,6 +154,9 @@ const AthleteInviteForm = ({ onSuccess, onCancel }) => {
                         .insert({
                             academy_id: profile.academy_id,
                             name: entry.name,
+                            email: entry.email, // New Field
+                            coach_id: entry.coachId || null, // New Field
+                            level_id: entry.levelId || null, // New Field
                             gender: entry.gender,
                             dob: entry.dob,
                             medical_info: { tags: entry.medicalTags },
@@ -134,6 +177,44 @@ const AthleteInviteForm = ({ onSuccess, onCancel }) => {
 
                     if (linkError) throw linkError;
 
+                    // 4. Send Invite Email (if email exists)
+                    if (entry.email) {
+                        try {
+                            // A. Create Invitation Record
+                            const token = self.crypto.randomUUID();
+                            const { error: inviteError } = await supabase
+                                .from('invitations')
+                                .insert({
+                                    academy_id: profile.academy_id,
+                                    email: entry.email,
+                                    role: 'athlete',
+                                    token: token,
+                                    status: 'pending'
+                                });
+
+                            if (inviteError) {
+                                console.error("Failed to create invitation record", inviteError);
+                                throw inviteError;
+                            }
+
+                            // B. Send Email via API
+                            await fetch('/api/send-invite', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    email: entry.email,
+                                    firstName: entry.name.split(' ')[0],
+                                    role: 'athlete',
+                                    token: token // Pass the token!
+                                })
+                            });
+                        } catch (emailErr) {
+                            console.error("Invite Email Failed (Non-blocking):", emailErr);
+                            // We don't fail the whole batch if email fails, but we log it
+                            toast.error(`Hero saved, but invite failed for ${entry.name}`);
+                        }
+                    }
+
                     successCount++;
 
                 } catch (innerErr) {
@@ -149,8 +230,6 @@ const AthleteInviteForm = ({ onSuccess, onCancel }) => {
                 onSuccess(); // Close modal
             } else {
                 toast.warning(`${successCount} succeeded, ${failCount} failed (${failedNames.join(', ')}).`, { id: toastId });
-                // We keep the modal open if there are failures, ideally we'd filter the list to show only failed ones, 
-                // but for now we just keep it open so they can retry or see what happened.
             }
 
         } catch (err) {
@@ -192,7 +271,7 @@ const AthleteInviteForm = ({ onSuccess, onCancel }) => {
 
                             {/* Row 1: Athlete Identity */}
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                                <div className="md:col-span-5">
+                                <div className="md:col-span-4">
                                     <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Hero Name</label>
                                     <div className="relative">
                                         <User className="absolute left-3 top-3 w-4 h-4 text-slate-300" />
@@ -205,7 +284,22 @@ const AthleteInviteForm = ({ onSuccess, onCancel }) => {
                                         />
                                     </div>
                                 </div>
-                                <div className="md:col-span-3">
+
+                                <div className="md:col-span-4">
+                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Email (For Invite)</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-300" />
+                                        <input
+                                            type="email"
+                                            value={entry.email}
+                                            onChange={e => handleChange(entry.id, 'email', e.target.value)}
+                                            className="w-full pl-9 p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:border-emerald-500 outline-none font-medium text-sm"
+                                            placeholder="athlete@example.com"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="md:col-span-2">
                                     <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Gender</label>
                                     <select
                                         className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm font-medium"
@@ -216,8 +310,8 @@ const AthleteInviteForm = ({ onSuccess, onCancel }) => {
                                         <option value="female">Girl</option>
                                     </select>
                                 </div>
-                                <div className="md:col-span-4">
-                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Date of Birth</label>
+                                <div className="md:col-span-2">
+                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">DOB</label>
                                     <input
                                         type="date"
                                         required
@@ -225,6 +319,40 @@ const AthleteInviteForm = ({ onSuccess, onCancel }) => {
                                         onChange={e => handleChange(entry.id, 'dob', e.target.value)}
                                         className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm font-bold text-slate-600"
                                     />
+                                </div>
+                            </div>
+
+                            {/* Row 1.5: Assignment */}
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                <div className="md:col-span-6">
+                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block flex items-center gap-1">
+                                        <Briefcase className="w-3 h-3" /> Assign Coach
+                                    </label>
+                                    <select
+                                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm font-medium"
+                                        value={entry.coachId}
+                                        onChange={e => handleChange(entry.id, 'coachId', e.target.value)}
+                                    >
+                                        <option value="">-- Select Coach --</option>
+                                        {coaches.map(c => (
+                                            <option key={c.id} value={c.id}>{c.full_name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="md:col-span-6">
+                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block flex items-center gap-1">
+                                        <Medal className="w-3 h-3" /> Level
+                                    </label>
+                                    <select
+                                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm font-medium"
+                                        value={entry.levelId}
+                                        onChange={e => handleChange(entry.id, 'levelId', e.target.value)}
+                                    >
+                                        <option value="">-- Select Level --</option>
+                                        {levels.map(l => (
+                                            <option key={l.id} value={l.id}>{l.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
@@ -268,8 +396,8 @@ const AthleteInviteForm = ({ onSuccess, onCancel }) => {
                                                 type="button"
                                                 onClick={() => toggleMedical(entry.id, tag)}
                                                 className={`px-2 py-1 rounded text-[10px] font-bold border transition-all ${entry.medicalTags.includes(tag)
-                                                        ? 'bg-red-50 border-red-200 text-red-600'
-                                                        : 'bg-white border-slate-100 text-slate-300 hover:border-slate-300'
+                                                    ? 'bg-red-50 border-red-200 text-red-600'
+                                                    : 'bg-white border-slate-100 text-slate-300 hover:border-slate-300'
                                                     }`}
                                             >
                                                 {tag}

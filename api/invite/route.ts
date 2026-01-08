@@ -55,6 +55,7 @@ export async function POST(request: Request) {
         }
 
         // 4. Create/Update Profile (The "Real Data" Step)
+        // 4. Create/Update Profile (The "Real Data" Step)
         // We immediately create the profile so the staff member appears in the list even before they accept.
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
@@ -64,10 +65,27 @@ export async function POST(request: Request) {
                 first_name: firstName,
                 last_name: lastName,
                 role: role,
-                salary: parseFloat(salary) || 0,
+                // salary: parseFloat(salary) || 0, // Removed from profiles, moved to staff_details
                 avatar_color: color || '#10B981', // Default Emerald
-                academy_id: 'default' // Temporary fallback
+                academy_id: body.academyId || null // Now correctly passed
             });
+
+        // 5. Create Staff Details (Specialization & Salary)
+        const { error: detailsError } = await supabaseAdmin
+            .from('staff_details')
+            .upsert({
+                profile_id: authData.user.id,
+                academy_id: body.academyId || null,
+                job_title: role,
+                specialization: body.specialization || null,
+                salary_config: { rate: parseFloat(salary) || 0, type: 'monthly' }
+            });
+
+        if (profileError || detailsError) {
+            const errorMsg = (profileError?.message || '') + ' ' + (detailsError?.message || '');
+            console.error('Profile/Details Creation Error:', errorMsg);
+            // We don't block success if at least invite was sent, but it's good to know
+        }
 
         if (profileError) {
             console.error('Profile Creation Error:', profileError);

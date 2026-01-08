@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUser } from '../../context/UserContext';
+import { useUser } from '@/context/UserContext';
 import { supabase } from '../../supabaseClient';
 import { format, differenceInMinutes, addMinutes } from 'date-fns';
 import { Timer, MapPin, Clock } from 'lucide-react';

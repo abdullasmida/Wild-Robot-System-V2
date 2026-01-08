@@ -3,7 +3,7 @@ import { Calendar as CalendarIcon, Search } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { supabase } from '../../supabaseClient';
+import { supabase } from '@/lib/supabase';
 import UserAvatar from '../ui/UserAvatar';
 
 function cn(...inputs: ClassValue[]) {
@@ -59,30 +59,15 @@ const DraggableCoach = ({ coach }) => {
     );
 };
 
-export default function SchedulerSidebar({ academyId }) {
-    const [draggableStaff, setDraggableStaff] = useState([]);
-    const [loading, setLoading] = useState(true);
+export default function SchedulerSidebar({ academyId, staffList = [] }: { academyId: string | null, staffList: any[] }) {
+    // DraggableStaff is now driven by props, but we map it to ensure it flat structure if needed
+    // The hook returns { profile: ... }, so we map it if necessary or just use it.
+    // Let's assume passed staffList is already flattened or contains profile info.
+    // Based on hook: it returns [{ profile_id, ... profile: {...} }]
 
-    useEffect(() => {
-        async function fetchStaff() {
-            if (!academyId) return;
-
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('academy_id', academyId)
-                // Fetch relevant roles: coach, head_coach, admin, owner
-                .in('role', ['coach', 'head_coach', 'admin', 'owner'])
-                .order('first_name');
-
-            if (data) {
-                setDraggableStaff(data);
-            }
-            setLoading(false);
-        }
-        fetchStaff();
-    }, [academyId]);
+    // We need to flatten it for the UI which expects simple coach object
+    const draggableStaff = staffList.map((s: any) => s.profile || s).filter(Boolean);
+    const loading = false; // Controlled by parent if needed, but for sidebar list it's fine to be instant updates
 
     return (
         <aside className="w-80 border-r border-slate-200 flex flex-col bg-white">

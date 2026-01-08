@@ -4,11 +4,14 @@ import App from './App' // Resolves to App.tsx
 import './index.css'
 
 import { ThemeProvider } from './context/ThemeContext'
+import { UserProvider } from '@/context/UserContext'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-        <ThemeProvider>
-            <App />
-        </ThemeProvider>
+        <UserProvider>
+            <ThemeProvider>
+                <App />
+            </ThemeProvider>
+        </UserProvider>
     </React.StrictMode>,
 )

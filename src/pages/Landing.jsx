@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Trophy, CheckCircle, Clock, Zap, Users, BarChart, LayoutDashboard, Shield, Play } from 'lucide-react';
+import { ArrowRight, Trophy, CheckCircle, Clock, Zap, Users, BarChart, LayoutDashboard, Shield, Play, Menu, X } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 export default function Landing() {
     const navigate = useNavigate();
     const [activeHub, setActiveHub] = useState('coaching'); // 'coaching' or 'management'
     const [session, setSession] = useState(null);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -74,20 +75,80 @@ export default function Landing() {
                             <>
                                 <button
                                     onClick={() => navigate('/login')}
-                                    className="text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors px-4 py-2"
+                                    className="hidden md:block text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors px-4 py-2"
                                 >
                                     Log in
                                 </button>
                                 <button
                                     onClick={() => navigate('/signup')}
-                                    className="bg-emerald-600 text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-200 hover:-translate-y-0.5"
+                                    className="hidden md:block bg-emerald-600 text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-200 hover:-translate-y-0.5"
                                 >
                                     Start for free
+                                </button>
+                                {/* Mobile Menu Toggle */}
+                                <button
+                                    className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                                    onClick={() => setIsMobileMenuOpen(true)}
+                                >
+                                    <Menu className="w-6 h-6" />
                                 </button>
                             </>
                         )}
                     </div>
                 </div>
+
+                {/* Mobile Menu Overlay */}
+                <AnimatePresence>
+                    {isMobileMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, x: '100%' }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: '100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="fixed inset-0 bg-white z-[60] flex flex-col"
+                        >
+                            <div className="h-20 flex items-center justify-between px-6 border-b border-slate-100">
+                                <div className="flex items-center gap-2">
+                                    <div className="bg-emerald-600 rounded-xl p-2 shadow-lg shadow-emerald-200">
+                                        <Trophy className="w-6 h-6 text-white" />
+                                    </div>
+                                    <span className="font-extrabold text-2xl tracking-tight text-slate-900">
+                                        Wild Robot
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 flex flex-col p-8 gap-8 overflow-y-auto">
+                                <nav className="flex flex-col gap-6 text-2xl font-bold text-slate-900">
+                                    <a href="#" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-emerald-600 transition-colors">Platform</a>
+                                    <a href="#" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-emerald-600 transition-colors">Solutions</a>
+                                    <button onClick={() => { setIsMobileMenuOpen(false); navigate('/pricing'); }} className="text-left hover:text-emerald-600 transition-colors">Pricing</button>
+                                </nav>
+
+                                <div className="mt-auto flex flex-col gap-4">
+                                    <button
+                                        onClick={() => { setIsMobileMenuOpen(false); navigate('/login'); }}
+                                        className="w-full py-4 text-center font-bold text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+                                    >
+                                        Log in
+                                    </button>
+                                    <button
+                                        onClick={() => { setIsMobileMenuOpen(false); navigate('/signup'); }}
+                                        className="w-full py-4 text-center font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-500 shadow-xl shadow-emerald-200 transition-all active:scale-95"
+                                    >
+                                        Start for free
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </nav>
 
             {/* --- 2. HERO SECTION --- */}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
-import { useUser } from '../../context/UserContext';
+import { useUser } from '@/context/UserContext';
 import { Trophy, ArrowRight, Check, Building2, Dumbbell, MapPin, Loader2, SkipForward, Upload, Image as ImageIcon } from 'lucide-react';
 
 export default function SetupModal({ onClose }) {

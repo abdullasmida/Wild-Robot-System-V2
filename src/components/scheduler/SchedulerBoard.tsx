@@ -23,7 +23,7 @@ import {
     subWeeks
 } from 'date-fns';
 import { SessionCapsule } from './SessionCapsule';
-import { fetchWeekSessions, Session, COACHES, LOCATIONS, Profile } from './mockData';
+import { fetchWeekSessions, Session, COACHES, Profile } from './mockData';
 import UserAvatar from '../ui/UserAvatar';
 import SchedulerSidebar from './SchedulerSidebar';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Filter } from 'lucide-react';
@@ -66,19 +66,17 @@ export const SchedulerBoard = () => {
     const scheduleData = useScheduleData(currentDate, userAcademyId);
 
     // Legacy Mock fallback (until DB is full)
-    const [sessions, setSessions] = useState<Session[]>([]);
     const [activeDragItem, setActiveDragItem] = useState<any>(null);
-    const [staffList, setStaffList] = useState<Profile[]>([]);
 
     // Fetch Sessions
-    useEffect(() => {
-        const loadData = async () => {
-            // 1. Fetch Sessions (Mock for now, but should be real eventually)
-            fetchWeekSessions().then(setSessions);
-        };
+    // Data derived directly from the hook
+    const sessions = (scheduleData.shifts || []).map(s => ({
+        ...s,
+        coach: s.staff // Map 'staff' relation to 'coach' prop expected by UI
+    }));
 
-        loadData();
-    }, [userAcademyId]);
+    // Legacy support for sidebar props if needed, but sidebar should now likely use its own hook or props
+    const staffList = scheduleData.coaches || [];
 
     // Handlers
     const handlePublish = async () => {
@@ -221,7 +219,7 @@ export const SchedulerBoard = () => {
             <div className="flex h-full bg-slate-50 text-slate-900 overflow-hidden font-sans">
 
                 {/* Sidebar: Coaches & Tools */}
-                <SchedulerSidebar academyId={userAcademyId} />
+                <SchedulerSidebar academyId={userAcademyId} staffList={staffList} />
 
                 {/* Main Board */}
                 <main className="flex-1 flex flex-col min-w-0 bg-slate-50">
@@ -287,12 +285,12 @@ export const SchedulerBoard = () => {
                                     ))}
                                 </div>
 
-                                {LOCATIONS.map(location => (
+                                {scheduleData.branches.map(location => (
                                     <div key={location.id} className="flex h-32 border-b border-slate-200 relative group hover:bg-white transition-colors">
                                         {/* Row Header */}
                                         <div className="w-40 sticky left-0 z-10 bg-slate-50/90 border-r border-slate-200 flex flex-col justify-center px-4 backdrop-blur-sm group-hover:bg-white/95 transition-colors shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
                                             <span className="font-bold text-slate-700">{location.name}</span>
-                                            <span className="text-xs text-slate-400">Cap: {location.capacity}</span>
+                                            <span className="text-xs text-slate-400">Cap: {(location as any).capacity || '-'}</span>
                                         </div>
 
                                         {/* Interactive Grid & Sessions */}

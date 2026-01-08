@@ -22,8 +22,19 @@ const LoginPage = () => {
 
         try {
             await login(email.trim(), password.trim());
-            // Success is handled by the useEffect or redirection logic
-            navigate('/dashboard');
+
+            // Get proper role for redirection
+            const user = useAuthStore.getState().user;
+            const role = user?.role || 'owner'; // Default to owner if unsure
+
+            if (role === 'athlete') {
+                navigate('/athlete');
+            } else if (role === 'coach' || role === 'head_coach') {
+                navigate('/coach/dashboard');
+            } else {
+                // Owner and others
+                navigate('/owner/dashboard');
+            }
         } catch (err: any) {
             // Error is already set in store, but we can also handle it here if needed
             console.error("Login failed", err);

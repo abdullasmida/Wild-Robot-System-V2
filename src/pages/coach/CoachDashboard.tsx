@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUser } from '../../context/UserContext';
+import { useUser } from '@/context/UserContext';
 import { Link } from 'react-router-dom';
 import { CalendarDays, Users, Trophy, ArrowRight } from 'lucide-react';
 

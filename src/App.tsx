@@ -11,6 +11,7 @@ import Pricing from './pages/auth/Pricing';
 import FakeCheckout from './pages/auth/FakeCheckout';
 import AuthCallback from './pages/auth/AuthCallback';
 import SetupAccount from './pages/auth/SetupAccount';
+import SetupPasswordPage from './pages/onboarding/SetupPassword';
 
 // Layouts
 import OwnerLayout from './layouts/OwnerLayout';
@@ -34,6 +35,7 @@ import CoachDashboard from './pages/coach/CoachDashboard';
 import CoachSchedule from './pages/coach/CoachSchedule';
 import CoachRoster from './pages/coach/Roster';
 import CoachProfile from './pages/coach/Profile';
+import CoachOnboarding from './pages/onboarding/CoachOnboarding';
 
 // Lazy Loading
 const AthleteBilling = React.lazy(() => import('./pages/Athlete/Billing'));
@@ -78,6 +80,7 @@ function App() {
                     {/* Authentication Flow */}
                     <Route path="/auth/callback" element={<AuthCallback />} />
                     <Route path="/auth/setup-account" element={<SetupAccount />} />
+                    <Route path="/setup-password" element={<SetupPasswordPage />} />
 
                     {/* -----------------------------------------------------------------
                         🛡️ OWNER SETUP ZONE
@@ -109,6 +112,9 @@ function App() {
 
                     {/* COACH ZONE */}
                     <Route path="/coach" element={<ProtectedRoute />}>
+                        {/* Onboarding Logic: Check if setup is needed */}
+                        <Route path="onboarding" element={<CoachOnboarding />} />
+
                         <Route element={<CoachLayout />}>
                             <Route index element={<Navigate to="/coach/dashboard" replace />} />
                             <Route path="dashboard" element={<CoachDashboard />} />

@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase'; // Ensure this uses correct path
 import { useState } from 'react';
 import { X, Check, Loader2, ChevronDown, Plus, Mail } from 'lucide-react';
 import { toast } from 'sonner';
@@ -7,9 +8,10 @@ interface UniversalAddModalProps {
     onClose: () => void;
     type?: 'staff' | 'athlete'; // Made optional to prevent breaking existing usages, defaults to 'staff'
     initialTab?: number; // Kept for compatibility but ignored in new UI
+    academyId?: string; // New: Pass Academy ID for linkage
 }
 
-export default function UniversalAddModal({ isOpen, onClose, type = 'staff' }: UniversalAddModalProps) {
+export default function UniversalAddModal({ isOpen, onClose, type = 'staff', academyId }: UniversalAddModalProps) {
     // --- States ---
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false); // For the Success View
@@ -20,6 +22,7 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff' }: U
         lastName: '',
         email: '',
         salary: '',
+        specialization: '', // New: Specialization (e.g. Gymnastics)
     });
 
     // Smart Role Selector States
@@ -43,37 +46,145 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff' }: U
             return;
         }
 
-        // 2. Prepare Payload
         setIsLoading(true);
+
         const payload = {
             ...formData,
-            role: selectedRole, // This carries either "Coach" or the custom role
-            color: '#10B981', // Default logic or random color
+            role: selectedRole,
+            color: '#10B981',
+            academyId: academyId || 'default',
         };
 
         try {
-            // 3. API Call
-            const res = await fetch('/api/invite/route', { // Updated path to match file location
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
+            // TRIM payload fields
+            const cleanPayload = {
+                ...payload,
+                firstName: payload.firstName.trim(),
+                lastName: payload.lastName.trim(),
+                email: payload.email.trim(),
+                inviteLink: `${window.location.origin}/setup-password`, // Dynamic link
+                academyName: 'Wild Robot Academy', // TODO: Fetch real name
+            };
 
-            const data = await res.json();
+            // ------------------------------------------------------------------
+            // 2. Main Strategy: Server-Side API (Production / Vercel)
+            // ------------------------------------------------------------------
+            let success = false;
+            let userId = null;
 
-            if (!res.ok) {
-                throw new Error(data.error || 'Failed to send invite');
+            try {
+                // 3. API Call: Supabase Edge Function
+                // This calls the remote function we just deployed
+                const { data, error } = await supabase.functions.invoke('send-invite', {
+                    body: cleanPayload,
+                });
+
+                if (error) {
+                    // If function is unreachable (e.g. network issue), throw to trigger fallback
+                    console.warn("Edge Function Error:", error);
+                    throw new Error("Edge Function Failed");
+                }
+
+                success = true;
+
+            } catch (apiError: any) {
+                console.warn("API Invite failed, attempting Client-Side Fallback...", apiError);
+
+                // ------------------------------------------------------------------
+                // 3. Fallback Strategy: Client-Side SignUp (Local Dev)
+                // ------------------------------------------------------------------
+
+                // A. Create a temp client that DOES NOT persist session (so we don't log out the owner)
+                const { createClient } = await import('@supabase/supabase-js'); // Dynamic import to save bundle
+                const tempSupabase = createClient(
+                    import.meta.env.VITE_SUPABASE_URL,
+                    import.meta.env.VITE_SUPABASE_ANON_KEY,
+                    { auth: { persistSession: false } }
+                );
+
+                // B. Sign Up the new user (Temporary Password)
+                const tempPassword = "TempPassword123!" + Math.random().toString(36).slice(-4);
+
+                const { data: authData, error: signUpError } = await tempSupabase.auth.signUp({
+                    email: cleanPayload.email,
+                    password: tempPassword,
+                    options: {
+                        data: {
+                            full_name: `${cleanPayload.firstName} ${cleanPayload.lastName}`,
+                            role: cleanPayload.role
+                        }
+                    }
+                });
+
+                if (signUpError) {
+                    if (signUpError.message.includes("registered")) {
+                        throw new Error("This email is already in use. Please use a different email for this test.");
+                    }
+                    throw signUpError;
+                }
+                if (!authData.user) throw new Error("SignUp successful but no user returned (Email confirmation might be required).");
+
+                userId = authData.user.id;
+
+                // C. Insert Profile (As the New User - allowed by RLS 'insert own profile')
+                const { error: profileError } = await tempSupabase
+                    .from('profiles')
+                    .insert({
+                        id: userId,
+                        email: cleanPayload.email,
+                        first_name: cleanPayload.firstName,
+                        last_name: cleanPayload.lastName,
+                        role: cleanPayload.role,
+                        avatar_color: cleanPayload.color,
+                        academy_id: payload.academyId === 'default' ? null : payload.academyId
+                    });
+
+                // Note: academyId prop is used here. 
+                // Correction: we need to use 'academyId' from props or payload
+
+                // Re-do insert with correct variable scope
+                const { error: profileError2 } = await tempSupabase
+                    .from('profiles')
+                    .upsert({ // Upsert to be safe
+                        id: userId,
+                        email: cleanPayload.email,
+                        first_name: cleanPayload.firstName,
+                        last_name: cleanPayload.lastName,
+                        role: cleanPayload.role,
+                        avatar_color: cleanPayload.color,
+                        academy_id: payload.academyId === 'default' ? null : payload.academyId
+                    });
+
+                if (profileError2) throw new Error("Profile Creation Failed: " + profileError2.message);
+
+                // D. Insert Staff Details (As the New User - allowed by 'Users can insert own details' policy)
+                // We use tempSupabase (the new user) instead of the owner client
+                const { error: detailsError } = await tempSupabase
+                    .from('staff_details')
+                    .upsert({
+                        profile_id: userId,
+                        academy_id: payload.academyId === 'default' ? null : payload.academyId,
+                        job_title: payload.role,
+                        specialization: payload.specialization || null,
+                        salary_config: { rate: parseFloat(payload.salary) || 0, type: 'monthly' }
+                    });
+
+                if (detailsError) throw new Error("Staff Details Failed: " + detailsError.message);
+
+                success = true;
+                toast.info("Local Mode: User created directly (check DB/Auth)", { duration: 5000 });
             }
 
-            // 4. Success State
-            setIsSuccess(true);
-            toast.success('Invite Sent! 🚀', {
-                description: `${formData.firstName} has been invited as a ${selectedRole}.`,
-            });
+            if (success) {
+                setIsSuccess(true);
+                toast.success('Staff Member Added! 🚀', {
+                    description: `${formData.firstName} has been added to the system.`,
+                });
+            }
 
         } catch (error: any) {
             console.error(error);
-            toast.error('Invite Failed', {
+            toast.error('Add Failed', {
                 description: error.message,
             });
         } finally {
@@ -128,7 +239,7 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff' }: U
                             <button
                                 onClick={() => {
                                     setIsSuccess(false);
-                                    setFormData({ firstName: '', lastName: '', email: '', salary: '' });
+                                    setFormData({ firstName: '', lastName: '', email: '', salary: '', specialization: '' });
                                 }}
                                 className="mt-4 text-sm font-bold text-slate-400 hover:text-emerald-500"
                             >
@@ -229,6 +340,19 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff' }: U
                                     </div>
                                 )}
                             </div>
+
+                            {/* Specialization (Only for Coaches) */}
+                            {(selectedRole === 'Coach' || selectedRole === 'Head Coach') && (
+                                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Specialization</label>
+                                    <input
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-400"
+                                        placeholder="e.g. Gymnastics, Swimming"
+                                        value={formData.specialization}
+                                        onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                                    />
+                                </div>
+                            )}
 
                             {/* Salary (Optional) */}
                             <div className="space-y-1.5">

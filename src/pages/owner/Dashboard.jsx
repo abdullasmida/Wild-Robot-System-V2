@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUser } from '../../context/UserContext';
+import { useUser } from '@/context/UserContext';
 import { PlusCircle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

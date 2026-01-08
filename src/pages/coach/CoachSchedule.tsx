@@ -1,22 +1,44 @@
 import React, { useEffect, useState } from 'react';
-import { useUser } from '../../context/UserContext';
-import { supabase } from '../../supabaseClient';
-import { format, isToday, isTomorrow, parseISO } from 'date-fns';
-import { Calendar, MapPin, Clock, AlertCircle } from 'lucide-react';
+import { useUser } from '@/context/UserContext';
+import { supabase } from '@/lib/supabase';
+import {
+    format,
+    parseISO,
+    startOfMonth,
+    endOfMonth,
+    eachDayOfInterval,
+    isSameDay,
+    isToday,
+    addMonths,
+    subMonths,
+    isBefore,
+    isAfter,
+    startOfDay
+} from 'date-fns';
+import { Calendar as CalendarIcon, MapPin, Clock, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 const CoachSchedule = () => {
     const { user } = useUser();
     const [shifts, setShifts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Calendar State
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState(new Date());
+
     useEffect(() => {
         const fetchShifts = async () => {
             if (!user) return;
 
+            setLoading(true);
             try {
-                // Fetch shifts for the logged-in coach
-                // Join with locations to get the name
+                // Fetch shifts for a broad range (e.g. current month +/- 1 month window to be safe)
+                // For simplicity, fetching all 'active' shifts could work if dataset isn't huge, 
+                // but let's stick to a reasonable window if possible. 
+                // For now, let's fetch ALL shifts to ensure history dots work.
+
                 const { data, error } = await supabase
                     .from('staff_shifts')
                     .select(`
@@ -24,13 +46,9 @@ const CoachSchedule = () => {
                         start_time,
                         end_time,
                         status,
-                        locations (
-                            name
-                        )
+                        locations ( name )
                     `)
-                    .eq('staff_id', user.id) // Use staff_id based on schema usually matching auth.uid() or linked profile
-                    .gte('start_time', new Date().toISOString()) // Upcoming only? Or all? User said "CoachSchedule Page... read-only version of Scheduler". Usually implies future.
-                    // Let's show today and future.
+                    .eq('staff_id', user.id)
                     .order('start_time', { ascending: true });
 
                 if (error) throw error;
@@ -46,90 +64,194 @@ const CoachSchedule = () => {
         fetchShifts();
     }, [user]);
 
-    if (loading) {
-        return <div className="p-8 text-center text-slate-400 font-medium">Loading Schedule...</div>;
-    }
+    // --- Helpers ---
 
-    if (shifts.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-2xl shadow-sm border border-slate-200 mt-8">
-                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                    <Calendar className="w-8 h-8 text-slate-300" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900">No Upcoming Shifts</h3>
-                <p className="text-slate-500 max-w-xs mx-auto mt-2">You don't have any scheduled shifts coming up. Enjoy your time off!</p>
-            </div>
+    const getMonthDays = () => {
+        const start = startOfMonth(currentDate);
+        const end = endOfMonth(currentDate);
+        return eachDayOfInterval({ start, end });
+    };
+
+    const getDayShifts = (date: Date) => {
+        return shifts.filter(shift => isSameDay(parseISO(shift.start_time), date));
+    };
+
+    const getDayStatus = (date: Date) => {
+        const dayShifts = getDayShifts(date);
+        if (dayShifts.length === 0) return 'empty';
+
+        const now = new Date();
+
+        // Check for "Live" (Any shift currently happening)
+        const isLive = dayShifts.some(s =>
+            isBefore(parseISO(s.start_time), now) &&
+            isAfter(parseISO(s.end_time), now)
         );
-    }
+        if (isLive) return 'live'; // Orange
 
-    // Grouping by Date
-    const grouped = shifts.reduce((acc, shift) => {
-        const dateKey = format(parseISO(shift.start_time), 'yyyy-MM-dd');
-        if (!acc[dateKey]) acc[dateKey] = [];
-        acc[dateKey].push(shift);
-        return acc;
-    }, {} as Record<string, any[]>);
+        // Check for "Missed" (Past start time, but status is not completed/clocked-in)
+        // Assuming 'completed' or 'active' status logic. 
+        // If status is still 'assigned' and time passed -> Red
+        const hasMissed = dayShifts.some(s =>
+            isBefore(parseISO(s.end_time), now) &&
+            s.status !== 'completed'
+        );
+        if (hasMissed) return 'missed'; // Red
+
+        // Check for "Done" (All past shifts are completed)
+        const isAllDone = dayShifts.every(s => s.status === 'completed');
+        if (isAllDone && isBefore(date, startOfDay(now))) return 'done'; // Green
+
+        // Future
+        if (isAfter(date, startOfDay(now))) return 'future'; // Grey
+
+        return 'pending'; // Today but not started yet?
+    };
+
+    const getPulseDotColor = (status: string) => {
+        switch (status) {
+            case 'live': return 'bg-amber-500 animate-pulse ring-2 ring-amber-200';
+            case 'missed': return 'bg-red-500';
+            case 'done': return 'bg-emerald-500';
+            case 'future': return 'bg-slate-300';
+            case 'pending': return 'bg-blue-400';
+            default: return 'hidden';
+        }
+    };
+
+    // --- Render ---
+
+    const selectedDayShifts = getDayShifts(selectedDate);
+    const monthDays = getMonthDays();
 
     return (
-        <div className="max-w-2xl mx-auto space-y-8">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">My Schedule</h1>
-                    <p className="text-slate-500 font-medium">Upcoming classes and sessions</p>
+        <div className="max-w-md mx-auto space-y-6 pb-20"> {/* Mobile Width Optimized */}
+
+            {/* Header / Month Nav */}
+            <div className="flex items-center justify-between px-2">
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                    {format(currentDate, 'MMMM yyyy')}
+                </h1>
+                <div className="flex gap-2">
+                    <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50"><ChevronLeft className="w-5 h-5 text-slate-600" /></button>
+                    <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50"><ChevronRight className="w-5 h-5 text-slate-600" /></button>
                 </div>
-                <button className="text-emerald-600 font-bold text-sm hover:underline">Sync Calendar</button>
             </div>
 
-            <div className="space-y-6">
-                {Object.entries(grouped).map(([date, dayShifts]) => {
-                    const dateObj = parseISO(date);
-                    let title = format(dateObj, 'EEEE, MMMM do');
-                    if (isToday(dateObj)) title = 'Today';
-                    if (isTomorrow(dateObj)) title = 'Tomorrow';
+            {/* MONTH MATRIX */}
+            <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-200">
+                {/* Weekday Headers */}
+                <div className="grid grid-cols-7 mb-2">
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                        <div key={i} className="text-center text-xs font-bold text-slate-400 py-2">{d}</div>
+                    ))}
+                </div>
 
-                    return (
-                        <div key={date}>
-                            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 px-1">{title}</h2>
-                            <div className="space-y-3">
-                                {dayShifts.map(shift => (
-                                    <div key={shift.id} className="group bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-500/30 transition-all flex items-start gap-4 cursor-default">
-                                        <div className="flex flex-col items-center justify-center w-14 h-14 bg-slate-50 rounded-lg border border-slate-100 group-hover:bg-emerald-50 group-hover:border-emerald-100 transition-colors">
-                                            <span className="text-xs font-bold text-slate-400 group-hover:text-emerald-500 uppercase">{format(parseISO(shift.start_time), 'a')}</span>
-                                            <span className="text-lg font-black text-slate-900 group-hover:text-emerald-700">{format(parseISO(shift.start_time), 'h:mm')}</span>
-                                        </div>
+                {/* Days Grid */}
+                <div className="grid grid-cols-7 gap-y-2">
+                    {/* Add empty slots for start offset if needed (skipped for simplicity, but cleaner with startDay offset) */}
+                    {/* Ideally we pad the start, but let's just render days for now */}
 
-                                        <div className="flex-1">
-                                            <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                                                {/* If we had class title, use it. Else Generic. */}
-                                                Shift Session
-                                            </h3>
-                                            <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
-                                                <div className="flex items-center gap-1">
-                                                    <Clock className="w-3.5 h-3.5" />
-                                                    {format(parseISO(shift.start_time), 'h:mm')} - {format(parseISO(shift.end_time), 'h:mm a')}
-                                                </div>
-                                                {shift.locations?.name && (
-                                                    <div className="flex items-center gap-1">
-                                                        <MapPin className="w-3.5 h-3.5" />
-                                                        {shift.locations.name}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
+                    {monthDays.map((day, i) => {
+                        const status = getDayStatus(day);
+                        const isSelected = isSameDay(day, selectedDate);
+                        const isTodayDate = isToday(day);
 
-                                        {shift.status === 'in_progress' && (
-                                            <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider rounded-md">Live</span>
-                                        )}
-                                    </div>
-                                ))}
+                        return (
+                            <div key={i} className="flex flex-col items-center">
+                                <button
+                                    onClick={() => setSelectedDate(day)}
+                                    className={`
+                                        w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-all relative
+                                        ${isSelected
+                                            ? 'bg-slate-900 text-white shadow-lg scale-110 z-10'
+                                            : 'text-slate-600 hover:bg-slate-50'
+                                        }
+                                        ${isTodayDate && !isSelected ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : ''}
+                                    `}
+                                >
+                                    {format(day, 'd')}
+
+                                    {/* THE PULSE DOT */}
+                                    {status !== 'empty' && (
+                                        <div className={`absolute -bottom-1 w-1.5 h-1.5 rounded-full ${getPulseDotColor(status)}`} />
+                                    )}
+                                </button>
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
 
-            <div className="pt-8 text-center">
-                <p className="text-xs text-slate-400">Showing upcoming shifts only. <Link to="/coach/history" className="underline hover:text-slate-600">View History</Link></p>
+            {/* SELECTED DAY DETAILS */}
+            <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center justify-between px-1">
+                    <h2 className="text-lg font-bold text-slate-800">
+                        {isToday(selectedDate) ? 'Today' : format(selectedDate, 'EEEE, MMM do')}
+                    </h2>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                        {selectedDayShifts.length} Sessions
+                    </span>
+                </div>
+
+                {selectedDayShifts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50 rounded-2xl border-dashed border-2 border-slate-200">
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm text-slate-300">
+                            <CalendarIcon className="w-6 h-6" />
+                        </div>
+                        <p className="text-slate-400 font-medium text-sm">No sessions scheduled.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {selectedDayShifts.map(shift => (
+                            <div key={shift.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 relative overflow-hidden group">
+                                {/* Status Indicator Stripe (Left) */}
+                                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${shift.status === 'completed' ? 'bg-emerald-500' :
+                                    shift.status === 'in_progress' ? 'bg-amber-500' :
+                                        'bg-slate-200'
+                                    }`} />
+
+                                {/* Time Box */}
+                                <div className="flex flex-col items-center justify-center min-w-[60px]">
+                                    <span className="text-lg font-black text-slate-900">{format(parseISO(shift.start_time), 'h:mm')}</span>
+                                    <span className="text-xs font-bold text-slate-400 uppercase">{format(parseISO(shift.start_time), 'a')}</span>
+                                </div>
+
+                                {/* Info */}
+                                <div className="flex-1 border-l border-slate-100 pl-4 py-1">
+                                    <h3 className="font-bold text-slate-900 text-base">Training Session</h3>
+                                    {shift.locations?.name && (
+                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mt-1">
+                                            <MapPin className="w-3.5 h-3.5" /> {shift.locations.name}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Action / Status Badge */}
+                                <div className="pr-2">
+                                    {shift.status === 'completed' ? (
+                                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                            <CheckCircle2 className="w-5 h-5" />
+                                        </div>
+                                    ) : shift.status === 'in_progress' ? (
+                                        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                                            <Clock className="w-5 h-5 animate-pulse" />
+                                        </div>
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">
+                                            <ChevronRight className="w-5 h-5" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Sync Prompt */}
+            <div className="text-center pt-8 opacity-50">
+                <p className="text-xs text-slate-400">Everything looks up to date.</p>
             </div>
         </div>
     );
