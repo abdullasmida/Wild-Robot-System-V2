@@ -1,166 +1,140 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { checkDeviceAccess } from '../utils/auth-guard';
+import { useAuthStore } from '@/stores/useAuthStore'; // Utilize the store for speed if available
+import { Loader2 } from 'lucide-react';
 
-const AuthGuard = ({ children }) => {
+const STAFF_ROLES = ['owner', 'admin', 'manager', 'head_coach', 'coach'];
+
+export const isStaffMember = (role) => STAFF_ROLES.includes(role);
+
+const AuthGuard = ({ children, requiredZone = 'any', allowSetup = false }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [loading, setLoading] = useState(true);
     const [isAuthorized, setIsAuthorized] = useState(false);
 
-    const verifyAccess = useCallback(async (retryCount = 0) => {
+    // We can use the store to get the user initially, but we might verify with DB for critical checks
+    // For now, let's trust Supabase session + DB Role check like before for robust security
+
+    // Logic extraction for re-use
+    const checkAuthorization = useCallback(async () => {
         try {
-            // 1. Check if user is logged in
             const { data: { session } } = await supabase.auth.getSession();
 
+            // 1. Authentication Check
             if (!session) {
+                // Determine redirect based on zone
+                if (requiredZone === 'athlete') {
+                    // If trying to access athlete zone, send to athlete login? 
+                    // Or just generic login. Generic login has a selector now.
+                    navigate('/login');
+                } else {
+                    navigate('/login');
+                }
+                return;
+            }
+
+            // 2. Fetch Latest Role & Setup Status
+            // We fetch directly to ensure no stale state allows a breach
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('role, setup_completed')
+                .eq('id', session.user.id)
+                .single();
+
+            if (error || !profile) {
+                console.error("AuthGuard: Profile not found.", error);
+                await supabase.auth.signOut();
                 navigate('/login');
                 return;
             }
 
-            // 1.5. CHECK ROLE VS ROUTE (Cross-Portal Protection) 🛡️
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', session.user.id)
-                .single();
+            const userRole = profile.role;
+            const isStaff = isStaffMember(userRole);
+            const isAthlete = !isStaff; // Simplification, assuming valid roles
 
-            const userRole = profile?.role || 'coach';
-            const currentPath = window.location.pathname;
+            // 3. Zone Enforcement (The Traffic Cop)
+            if (requiredZone === 'staff') {
+                if (!isStaff) {
+                    console.warn(`AuthGuard: Athlete (${userRole}) attempted to breach Staff Zone. Redirecting...`);
+                    navigate('/athlete', { replace: true });
+                    return;
+                }
+            } else if (requiredZone === 'athlete') {
+                if (isStaff) {
+                    console.warn(`AuthGuard: Staff (${userRole}) attempted to breach Athlete Zone. Redirecting...`);
+                    navigate('/workspace/dashboard', { replace: true }); // Default to workspace/dashboard
+                    return;
+                }
+            }
 
-            // Block Student -> Coach Portal
-            if (currentPath.startsWith('/coach') && userRole === 'athlete') {
-                console.warn("AuthGuard: Athlete attempted to breach Coach Portal. Redirecting to Athlete Home.");
-                navigate('/athlete', { replace: true });
+            // 4. Setup Completion Logic (Legacy ProtectedRoute Logic)
+            // If setup IS complete, but we are on a setup-allowed route (and not specifically requesting setup?), 
+            // usually we don't block. But if we are ON /setup and setup IS complete, kick them out.
+            // Wait, the previous logic was:
+            // "If Setup Complete && allowSetup (meaning we are on /setup) -> Redirect to Dashboard"
+            // "If Setup Incomplete && !allowSetup -> Redirect to Modal (or do nothing now as Modal is on Dashboard)"
+
+            // Current Requirement: "Owner Uses AcademyWizard -> Redirects to /setup"
+            // So /setup must allow users with setup_completed = false.
+
+            // If we are strictly on /setup (implied by allowSetup=true in this context usually, or we check path)
+            // Let's refine: verify where we are.
+            const onSetupPage = location.pathname === '/setup';
+
+            if (isStaff && profile.setup_completed && onSetupPage) {
+                // Setup is done, get out of setup page
+                navigate('/workspace/dashboard', { replace: true });
                 return;
             }
 
-            // Block Coach -> Athlete Portal
-            if (currentPath.startsWith('/athlete') && userRole !== 'athlete') {
-                console.warn("AuthGuard: Authorization Mismatch. Redirecting to Landing.");
-                navigate('/', { replace: true });
-                return;
-            }
+            // Note: If setup is NOT complete, previous logic redirected TO /setup.
+            // Now we prefer the Modal on Dashboard, so we allow them to proceed to Dashboard.
+            // So no blocking "Incomplete Setup" users anymore from reaching Dashboard.
 
-            setLoading(false);
             setIsAuthorized(true);
 
-            // 🛑 SMART EVICTION LISTENER
-            // "If my session row disappears, it means I was displaced."
+            // 5. Session & Device Security (Preserved)
             const deviceId = localStorage.getItem('wibo_device_id');
+            // Optimistic start - we authorize UI first, then subscribe to kill it if needed
+            // (Moved subscription outside/after setAuthorized to prevent delay on rendering?)
+            // Actually, keep it here to ensuring subscription logic runs.
 
             const subscription = supabase
                 .channel(`session_guard_${session.user.id}`)
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'DELETE',
-                        schema: 'public',
-                        table: 'active_sessions',
-                        filter: `user_id=eq.${session.user.id}` // Filter by user to reduce traffic, check device locally
-                    },
+                .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'active_sessions', filter: `user_id=eq.${session.user.id}` },
                     async (payload) => {
-                        console.log("Session Deleted Event:", payload);
-                        // Check if the deleted session was THIS device
                         if (payload.old && payload.old.device_id === deviceId) {
-                            console.warn("⛔ SESSION DISPLACED: Signing out...");
+                            alert("Session expired or opened on another device.");
                             await supabase.auth.signOut();
-                            navigate('/login', {
-                                replace: true,
-                                state: { error: "Access transferred to a newer device." }
-                            });
+                            navigate('/login');
                         }
-                    }
-                )
+                    })
                 .subscribe();
 
             return () => {
                 supabase.removeChannel(subscription);
             };
 
-        } catch (error) {
-            console.error("Auth Verification Failed:", error);
+        } catch (err) {
+            console.error("AuthGuard Error:", err);
             navigate('/login');
         } finally {
             setLoading(false);
         }
-    }, [navigate]);
+    }, [navigate, requiredZone, location.pathname]);
 
     useEffect(() => {
-        verifyAccess();
-    }, [verifyAccess]);
-
-    // 🛑 SECURITY: Monitor Role Changes (Zombie Session Killer)
-    useEffect(() => {
-        const monitorRole = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const channel = supabase
-                .channel(`profile_watch_${user.id}`)
-                .on('postgres_changes',
-                    { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
-                    (payload) => {
-                        console.warn(`👮 Security Alert: Role changed to ${payload.new.role}`);
-                        // Reload to force re-verification processing
-                        window.location.reload();
-                    }
-                )
-                .subscribe();
-
-            return () => supabase.removeChannel(channel);
-        };
-
-        monitorRole();
-    }, []);
+        checkAuthorization();
+    }, [checkAuthorization]);
 
     if (loading) {
-        // High-end loading state matching the theme
+        // Theme-aware Loader
         return (
-            <div className="flex min-h-screen bg-slate-50">
-                {/* Skeleton Sidebar */}
-                <div className="hidden md:flex flex-col w-72 bg-slate-900 border-r border-slate-800 p-8">
-                    <div className="flex items-center gap-3 mb-10">
-                        <div className="h-10 w-10 bg-slate-800 rounded-xl animate-pulse"></div>
-                        <div className="space-y-2">
-                            <div className="h-4 w-24 bg-slate-800 rounded animate-pulse"></div>
-                            <div className="h-2 w-16 bg-slate-800 rounded animate-pulse"></div>
-                        </div>
-                    </div>
-                    <div className="space-y-4">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                            <div key={i} className="h-10 w-full bg-slate-800/50 rounded-xl animate-pulse"></div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Skeleton Content */}
-                <div className="flex-1 flex flex-col">
-                    {/* Skeleton Header */}
-                    <div className="h-20 border-b border-slate-200 bg-white px-8 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="h-8 w-32 bg-slate-100 rounded-lg animate-pulse"></div>
-                            <div className="hidden xl:flex gap-3 pl-8 border-l border-slate-200 h-10 items-center">
-                                <div className="h-8 w-24 bg-slate-100 rounded-lg animate-pulse"></div>
-                                <div className="h-8 w-24 bg-slate-100 rounded-lg animate-pulse"></div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="h-10 w-24 bg-slate-100 rounded-full animate-pulse"></div>
-                            <div className="h-10 w-10 bg-slate-100 rounded-full animate-pulse"></div>
-                        </div>
-                    </div>
-
-                    {/* Skeleton Main Area */}
-                    <div className="p-8 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="h-32 bg-white rounded-2xl shadow-sm border border-slate-100 animate-pulse"></div>
-                            <div className="h-32 bg-white rounded-2xl shadow-sm border border-slate-100 animate-pulse"></div>
-                            <div className="h-32 bg-white rounded-2xl shadow-sm border border-slate-100 animate-pulse"></div>
-                        </div>
-                        <div className="h-64 bg-white rounded-2xl shadow-sm border border-slate-100 animate-pulse"></div>
-                    </div>
-                </div>
+            <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950">
+                <Loader2 className="w-12 h-12 animate-spin text-emerald-500 mb-4" />
+                <p className="text-slate-500 font-mono text-xs tracking-widest animate-pulse">VERIFYING CLEARANCE...</p>
             </div>
         );
     }

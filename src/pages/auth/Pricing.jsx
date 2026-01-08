@@ -84,8 +84,8 @@ export default function Pricing() {
                         <button
                             onClick={() => setActiveHub('coaching')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeHub === 'coaching'
-                                    ? 'bg-white text-blue-600 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                ? 'bg-white text-blue-600 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             <Trophy className="w-4 h-4" />
@@ -94,8 +94,8 @@ export default function Pricing() {
                         <button
                             onClick={() => setActiveHub('management')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeHub === 'management'
-                                    ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                ? 'bg-white text-indigo-600 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             <Briefcase className="w-4 h-4" />
@@ -168,7 +168,7 @@ export default function Pricing() {
 
                         {/* CTA BUTTON */}
                         <button
-                            onClick={() => navigate('/setup')}
+                            onClick={() => navigate('/signup')}
                             className={`w-full py-4 rounded-xl font-bold mb-8 transition-transform active:scale-95 text-sm uppercase tracking-wide flex items-center justify-center gap-2 ${plan.buttonColor}`}
                         >
                             Start Free Trial

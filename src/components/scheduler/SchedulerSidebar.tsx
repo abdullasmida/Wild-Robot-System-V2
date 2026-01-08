@@ -104,8 +104,8 @@ export default function SchedulerSidebar({ academyId, staffList = [] }: { academ
                         </a>
                     </div>
                 ) : (
-                    draggableStaff.map(coach => (
-                        <DraggableCoach key={coach.id} coach={coach} />
+                    draggableStaff.map((coach, index) => (
+                        <DraggableCoach key={coach.id || index} coach={coach} />
                     ))
                 )}
             </div>

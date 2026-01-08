@@ -82,19 +82,11 @@ const JoinTeam = () => {
                     .update({ status: 'accepted' })
                     .eq('id', invitation.id);
 
-                // D. If Athlete, link to the pre-created athlete record
-                if (invitation.role === 'athlete') {
-                    const { error: linkError } = await supabase
-                        .from('athletes')
-                        .update({ profile_id: userId })
-                        .eq('email', invitation.email)
-                        .eq('academy_id', invitation.academy_id);
+                // D. If Staff (Coach/Head Coach/Manager), create staff_details
+                // Owner is handled via metadata mostly, but if invited as owner to existing academy, maybe add details too?
+                // Usually Owners are created via Wizard. If an Owner invites another Owner, it's just a role assignment.
 
-                    if (linkError) console.error("Failed to link athlete record", linkError);
-                }
-
-                // E. If Staff (Coach/Head Coach), create staff_details
-                if (invitation.role === 'coach' || invitation.role === 'head_coach') {
+                if (invitation.role === 'coach' || invitation.role === 'head_coach' || invitation.role === 'manager') {
                     const specialization = invitation.metadata?.sport || '';
                     const baseRole = invitation.role.replace('_', ' ');
                     const fullJobTitle = specialization
@@ -112,13 +104,11 @@ const JoinTeam = () => {
                     if (staffError) console.error("Failed to create staff details", staffError);
                 }
 
-                // Redirect based on role
-                if (invitation.role === 'athlete') {
-                    navigate('/athlete');
-                } else if (invitation.role === 'owner') {
+                // Redirect based on role (Strict Staff Zone)
+                if (invitation.role === 'owner') {
                     navigate('/owner/dashboard');
                 } else {
-                    navigate('/coach/home');
+                    navigate('/coach/dashboard'); // Unified Start Point for non-owner staff
                 }
             }
 
@@ -133,8 +123,8 @@ const JoinTeam = () => {
 
     if (error) return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-            <div className="bg-white p-8 rounded-2xl shadow-sm text-center max-w-md">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-600 text-2xl">⚠️</div>
+            <div className="bg-white p-8 rounded-2xl shadow-sm text-center max-w-md border border-red-100">
+                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500 text-2xl">⚠️</div>
                 <h2 className="text-xl font-bold text-slate-900 mb-2">Invitation Error</h2>
                 <p className="text-slate-500">{error}</p>
             </div>

@@ -15,6 +15,7 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff', aca
     // --- States ---
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false); // For the Success View
+    const [tempPassword, setTempPassword] = useState<string | null>(null);
 
     // Form Data
     const [formData, setFormData] = useState({
@@ -62,6 +63,7 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff', aca
                 firstName: payload.firstName.trim(),
                 lastName: payload.lastName.trim(),
                 email: payload.email.trim(),
+                role: payload.role.toLowerCase(), // Normalize role to lowercase
                 inviteLink: `${window.location.origin}/setup-password`, // Dynamic link
                 academyName: 'Wild Robot Academy', // TODO: Fetch real name
             };
@@ -103,11 +105,12 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff', aca
                 );
 
                 // B. Sign Up the new user (Temporary Password)
-                const tempPassword = "TempPassword123!" + Math.random().toString(36).slice(-4);
+                const generatedPassword = "TempPassword123!" + Math.random().toString(36).slice(-4);
+                setTempPassword(generatedPassword);
 
                 const { data: authData, error: signUpError } = await tempSupabase.auth.signUp({
                     email: cleanPayload.email,
-                    password: tempPassword,
+                    password: generatedPassword,
                     options: {
                         data: {
                             full_name: `${cleanPayload.firstName} ${cleanPayload.lastName}`,
@@ -127,9 +130,10 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff', aca
                 userId = authData.user.id;
 
                 // C. Insert Profile (As the New User - allowed by RLS 'insert own profile')
+                // C. Insert/Upsert Profile (Handling Conflicts)
                 const { error: profileError } = await tempSupabase
                     .from('profiles')
-                    .insert({
+                    .upsert({
                         id: userId,
                         email: cleanPayload.email,
                         first_name: cleanPayload.firstName,
@@ -137,25 +141,14 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff', aca
                         role: cleanPayload.role,
                         avatar_color: cleanPayload.color,
                         academy_id: payload.academyId === 'default' ? null : payload.academyId
-                    });
+                    }, { onConflict: 'id' });
+
+                if (profileError) throw new Error("Profile Creation Failed: " + profileError.message);
 
                 // Note: academyId prop is used here. 
                 // Correction: we need to use 'academyId' from props or payload
 
-                // Re-do insert with correct variable scope
-                const { error: profileError2 } = await tempSupabase
-                    .from('profiles')
-                    .upsert({ // Upsert to be safe
-                        id: userId,
-                        email: cleanPayload.email,
-                        first_name: cleanPayload.firstName,
-                        last_name: cleanPayload.lastName,
-                        role: cleanPayload.role,
-                        avatar_color: cleanPayload.color,
-                        academy_id: payload.academyId === 'default' ? null : payload.academyId
-                    });
 
-                if (profileError2) throw new Error("Profile Creation Failed: " + profileError2.message);
 
                 // D. Insert Staff Details (As the New User - allowed by 'Users can insert own details' policy)
                 // We use tempSupabase (the new user) instead of the owner client
@@ -225,11 +218,39 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff', aca
                             <div className="h-20 w-20 bg-emerald-100 rounded-full flex items-center justify-center mb-4 border border-emerald-200">
                                 <Check size={40} className="text-emerald-500" />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-800 mb-2">Invite Sent Successfully!</h3>
-                            <p className="text-slate-500 max-w-xs">
-                                We've sent an email to <span className="text-emerald-600 font-bold">{formData.email}</span>.
-                                They can now set their password and join your academy.
-                            </p>
+                            {tempPassword ? (
+                                <div className="mb-6 w-full bg-orange-50 border border-orange-200 rounded-xl p-4 text-left">
+                                    <h4 className="font-bold text-orange-800 text-sm mb-1 flex items-center gap-2">
+                                        <Loader2 className="w-4 h-4" /> Local Mode / Fallback
+                                    </h4>
+                                    <p className="text-xs text-orange-700 mb-3">
+                                        The email system is in test mode. Please share these credentials manually:
+                                    </p>
+                                    <div className="bg-white border border-orange-200 rounded-lg p-3 flex items-center justify-between">
+                                        <div className="font-mono text-sm font-bold text-slate-700">
+                                            {tempPassword}
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(tempPassword);
+                                                toast.success("Password Copied!");
+                                            }}
+                                            className="text-orange-600 font-bold text-xs hover:underline"
+                                        >
+                                            Copy
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <h3 className="text-xl font-bold text-slate-800 mb-2">Invite Sent Successfully!</h3>
+                                    <p className="text-slate-500 max-w-xs">
+                                        We've sent an email to <span className="text-emerald-600 font-bold">{formData.email}</span>.
+                                        They can now set their password and join your academy.
+                                    </p>
+                                </>
+                            )}
+
                             <button
                                 onClick={onClose}
                                 className="mt-8 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-500/20"
@@ -239,6 +260,7 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff', aca
                             <button
                                 onClick={() => {
                                     setIsSuccess(false);
+                                    setTempPassword(null);
                                     setFormData({ firstName: '', lastName: '', email: '', salary: '', specialization: '' });
                                 }}
                                 className="mt-4 text-sm font-bold text-slate-400 hover:text-emerald-500"

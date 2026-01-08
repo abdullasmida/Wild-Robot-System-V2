@@ -37,7 +37,13 @@ export default function NotificationsDrawer({ isOpen, onClose }: NotificationsDr
                 .order('created_at', { ascending: false })
                 .limit(50); // Limit to last 50 for now
 
-            if (data) setNotifications(data as Notification[]);
+            if (error) {
+                // If table doesn't exist (404/400), don't crash, just show empty
+                console.warn("Notifications fetch failed (Table might be missing):", error);
+                setNotifications([]);
+            } else {
+                setNotifications(data as Notification[]);
+            }
             setLoading(false);
         };
 
@@ -171,8 +177,8 @@ export default function NotificationsDrawer({ isOpen, onClose }: NotificationsDr
                                                             key={notif.id}
                                                             onClick={() => markAsRead(notif.id)}
                                                             className={`relative flex gap-4 p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md ${notif.is_read
-                                                                    ? 'bg-white border-slate-100 opacity-70 hover:opacity-100'
-                                                                    : 'bg-blue-50/50 border-blue-100 shadow-sm ring-1 ring-blue-500/10'
+                                                                ? 'bg-white border-slate-100 opacity-70 hover:opacity-100'
+                                                                : 'bg-blue-50/50 border-blue-100 shadow-sm ring-1 ring-blue-500/10'
                                                                 }`}
                                                         >
                                                             <div className="flex-shrink-0 mt-1">

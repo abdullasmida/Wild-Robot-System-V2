@@ -1,45 +1,46 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
 // 1. Imports
 
 // Auth
-import LoginPage from './pages/auth/LoginPage';
+import Login from './pages/auth/Login';  // REFACTORED LOGIN
 import AcademyWizard from './pages/auth/AcademyWizard';
 import Pricing from './pages/auth/Pricing';
 import FakeCheckout from './pages/auth/FakeCheckout';
 import AuthCallback from './pages/auth/AuthCallback';
 import SetupAccount from './pages/auth/SetupAccount';
 import SetupPasswordPage from './pages/onboarding/SetupPassword';
+import LoginSelection from './pages/LoginSelection'; // NEW SELECTION SCREEN
 
 // Layouts
-import OwnerLayout from './layouts/OwnerLayout';
 import AthleteLayout from './layouts/StudentLayout';
-import CoachLayout from './layouts/CoachLayout';
 
 // Owner Pages
-import OwnerDashboard from './pages/owner/OwnerDashboard';
 import AcademySetup from './pages/owner/AcademySetup';
 import StaffRoster from './pages/owner/StaffRoster';
 import AthletesRoster from './pages/owner/AthletesRoster';
-import OwnerProfile from './pages/owner/OwnerProfile';
 import SchedulePage from './pages/SchedulePage';
 
 // Athlete Pages
 import AthleteHome from './pages/Athlete/AthleteHome';
 import Achievements from './pages/Athlete/Achievements';
 
-// Coach Pages
-import CoachDashboard from './pages/coach/CoachDashboard';
+// Workspace
+import WorkspaceLayout from './layouts/WorkspaceLayout';
+import WorkspaceDashboard from './pages/workspace/WorkspaceDashboard';
+
+// Coach Pages (Specific routes used in Workspace or Onboarding)
 import CoachSchedule from './pages/coach/CoachSchedule';
-import CoachRoster from './pages/coach/Roster';
-import CoachProfile from './pages/coach/Profile';
 import CoachOnboarding from './pages/onboarding/CoachOnboarding';
 
 // Lazy Loading
 const AthleteBilling = React.lazy(() => import('./pages/Athlete/Billing'));
 const AthleteSettings = React.lazy(() => import('./pages/Athlete/Settings'));
+const ClaimProfile = React.lazy(() => import('./pages/ClaimProfile'));
+
+import JoinTeam from './pages/JoinTeam';
 
 // Shared
 import Landing from './pages/Landing';
@@ -51,7 +52,7 @@ import ComingSoon from './components/ComingSoon';
 import ErrorBoundary from './components/ErrorBoundary';
 import CommandPalette from './components/CommandPalette';
 import AuthGuard from './components/AuthGuard';
-import ProtectedRoute from './components/ProtectedRoute';
+
 
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -70,68 +71,108 @@ function App() {
                 <Routes>
                     {/* Public Routes */}
                     <Route path="/" element={<Landing />} />
-                    <Route path="/login" element={<LoginPage />} />
+
+                    {/* PORTAL SELECTION */}
+                    <Route path="/portal-select" element={<LoginSelection />} />
+
+                    {/* LOGIN ROUTES */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/student/login" element={<Login initialMode="athlete" />} />
+                    <Route path="/athlete/login" element={<Navigate to="/student/login" replace />} />
+
                     <Route path="/signup" element={<AcademyWizard />} />
-                    <Route path="/athlete/login" element={<Navigate to="/login" replace />} />
                     <Route path="/pricing" element={<Pricing />} />
                     <Route path="/checkout" element={<FakeCheckout />} />
                     <Route path="/security-checkpoint" element={<SecurityCheckpointPage />} />
+
+
 
                     {/* Authentication Flow */}
                     <Route path="/auth/callback" element={<AuthCallback />} />
                     <Route path="/auth/setup-account" element={<SetupAccount />} />
                     <Route path="/setup-password" element={<SetupPasswordPage />} />
 
+                    {/* Coach Availability/Onboarding */}
+                    <Route path="/onboarding" element={
+                        <AuthGuard requiredZone="staff">
+                            <CoachOnboarding />
+                        </AuthGuard>
+                    } />
+
+                    {/* Public Staff Invite Link */}
+                    <Route path="/join" element={<JoinTeam />} />
+
+                    {/* Public Athlete Claim Link */}
+                    <Route path="/claim" element={
+                        <React.Suspense fallback={<div>Loading...</div>}>
+                            <ClaimProfile />
+                        </React.Suspense>
+                    } />
+
                     {/* -----------------------------------------------------------------
                         🛡️ OWNER SETUP ZONE
                     ----------------------------------------------------------------- */}
-                    <Route element={<ProtectedRoute allowSetup={true} />}>
-                        <Route path="/setup" element={<AcademySetup />} />
+                    {/* -----------------------------------------------------------------
+                        🛡️ OWNER SETUP ZONE
+                    ----------------------------------------------------------------- */}
+                    <Route
+                        path="/setup"
+                        element={
+                            <AuthGuard requiredZone="staff" allowSetup={true}>
+                                <AcademySetup />
+                            </AuthGuard>
+                        }
+                    />
+
+                    {/* -----------------------------------------------------------------
+                        🏰 STAFF ZONE (Owners & Coaches)
+                    ----------------------------------------------------------------- */}
+                    {/* OWNER ROUTES */}
+
+                    {/* -----------------------------------------------------------------
+                        🚀 WORKSPACE ZONE (Unified Staff Portal)
+                    ----------------------------------------------------------------- */}
+                    <Route
+                        path="/workspace"
+                        element={
+                            <AuthGuard requiredZone="staff">
+                                <WorkspaceLayout />
+                            </AuthGuard>
+                        }
+                    >
+                        <Route index element={<Navigate to="/workspace/dashboard" replace />} />
+                        <Route path="dashboard" element={<WorkspaceDashboard />} />
+
+                        {/* Modules (Shared or Role-Guarded internally) */}
+                        <Route path="schedule" element={<SchedulePage />} />
+                        {/* Note: SchedulePage needs to support 'Coach' mode or be wrapped. 
+                            For now, owners use SchedulePage. Coaches use CoachSchedule.
+                            We need a 'SmartSchedule' wrapper? 
+                            Let's map directly for now and trust the user role context if the component handles it, 
+                            OR use a specific wrapper if they differ significantly.
+                            Owner's SchedulePage might be too admin-heavy.
+                        */}
+
+                        <Route path="feed" element={<ComingSoon title="Live Feed" />} />
+                        <Route path="staff" element={<StaffRoster />} />
+                        <Route path="athletes" element={<AthletesRoster />} />
+                        <Route path="treasury" element={<ComingSoon title="Treasury" />} />
+                        <Route path="settings" element={<ComingSoon title="Settings" />} />
                     </Route>
 
                     {/* -----------------------------------------------------------------
-                        🏰 OWNER KINGDOM
+                        🏰 LEGACY ZONES (Fallbacks)
                     ----------------------------------------------------------------- */}
-                    <Route element={<ProtectedRoute />}>
-                        <Route path="/owner" element={<OwnerLayout />}>
-                            <Route index element={<Navigate to="/owner/dashboard" replace />} />
-                            <Route path="dashboard" element={<OwnerDashboard />} />
-
-                            {/* Modules */}
-                            <Route path="academy" element={<ComingSoon title="Academy Management" />} />
-                            <Route path="staff" element={<StaffRoster />} />
-                            <Route path="treasury" element={<ComingSoon title="Treasury & Finance" />} />
-                            <Route path="athletes" element={<AthletesRoster />} />
-                            <Route path="schedule" element={<SchedulePage />} />
-                            <Route path="feed" element={<ComingSoon title="Live Feed" />} />
-                            <Route path="settings" element={<ComingSoon title="System Settings" />} />
-                            <Route path="profile" element={<OwnerProfile />} />
-
-                        </Route>
-                    </Route>
-
-                    {/* COACH ZONE */}
-                    <Route path="/coach" element={<ProtectedRoute />}>
-                        {/* Onboarding Logic: Check if setup is needed */}
-                        <Route path="onboarding" element={<CoachOnboarding />} />
-
-                        <Route element={<CoachLayout />}>
-                            <Route index element={<Navigate to="/coach/dashboard" replace />} />
-                            <Route path="dashboard" element={<CoachDashboard />} />
-                            <Route path="schedule" element={<CoachSchedule />} />
-                            <Route path="athletes" element={<CoachRoster />} />
-                            <Route path="profile" element={<CoachProfile />} />
-                            {/* Fallback */}
-                            <Route path="*" element={<Navigate to="/coach/dashboard" replace />} />
-                        </Route>
-                    </Route>
+                    {/* 🔄 Legacy Redirects (Catch-all for old bookmarks) */}
+                    <Route path="/owner/*" element={<Navigate to="/workspace/dashboard" replace />} />
+                    <Route path="/coach/*" element={<Navigate to="/workspace/dashboard" replace />} />
 
                     {/* 🔄 Legacy Redirects */}
                     <Route path="/student/*" element={<Navigate to="/athlete" replace />} />
 
                     {/* 🏅 ATHLETE DASHBOARD */}
                     <Route path="/athlete" element={
-                        <AuthGuard>
+                        <AuthGuard requiredZone="athlete">
                             <AthleteLayout />
                         </AuthGuard>
                     }>

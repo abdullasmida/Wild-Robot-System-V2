@@ -32,11 +32,9 @@ const ProtectedRoute = ({ allowSetup = false }: ProtectedRouteProps) => {
     // Inspect profile and academy status
     const isSetupComplete = !!profile.setup_completed; // Cast to boolean to avoid undefined issues
 
-    // Case A: Setup NOT Complete -> Force them to /setup
-    // Exception: If allowSetup is true, we let them stay (that's the setup route itself)
-    if (!isSetupComplete && !allowSetup) {
-        return <Navigate to="/setup" replace />;
-    }
+    // Case A: Setup NOT Complete -> MOVED TO DASHBOARD MODAL
+    // We no longer block access. The Dashboard will show an overlay.
+    // if (!isSetupComplete && !allowSetup) { ... }
 
     // Case B: Setup IS Complete -> Force them OUT of /setup and into Dashboard
     if (isSetupComplete && allowSetup) {

@@ -177,7 +177,7 @@ export default function Landing() {
 
                     <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-24">
                         <button
-                            onClick={() => navigate('/setup')}
+                            onClick={() => navigate('/signup')}
                             className="w-full md:w-auto px-10 py-5 bg-emerald-600 text-white rounded-2xl font-bold text-lg hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-200 flex items-center justify-center gap-3 hover:-translate-y-1"
                         >
                             Start 14-Day Free Trial

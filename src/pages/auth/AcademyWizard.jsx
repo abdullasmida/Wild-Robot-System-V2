@@ -88,7 +88,7 @@ export default function AcademyWizard() {
                 // Show Success Toast
                 toast.success("Welcome, Commander!");
 
-                navigate('/setup');
+                navigate('/owner/dashboard');
             } else {
                 alert("Account created! Please check your email to confirm.");
             }

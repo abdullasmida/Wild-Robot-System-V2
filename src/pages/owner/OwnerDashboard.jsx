@@ -1,107 +1,44 @@
 import React, { useState } from 'react';
 import {
-    UserPlus, Megaphone, Clock, Activity,
-    Rocket, Calendar, Users
+    UserPlus, Megaphone, Clock, Activity
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ActionCard from '../../components/dashboard/ActionCard';
-import ChecklistWidget from '../../components/dashboard/ChecklistWidget';
 import BottomSheet from '../../components/ui/BottomSheet';
 import StaffInviteForm from '../../components/forms/StaffInviteForm';
+import SetupWizardModal from '../../components/onboarding/SetupWizardModal';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 const OwnerDashboard = () => {
     const navigate = useNavigate();
+    const { user, checkSession, loading } = useAuthStore();
+
     // Sheet State
     const [isStaffSheetOpen, setIsStaffSheetOpen] = useState(false);
 
-    // MOCK STATE: Toggle this to 1 to see the "Operations Center"
-    const athleteCount = 0;
-    const isNewAccount = athleteCount === 0;
+    // Derived State
+    // Only show wizard if user is loaded, NOT setup, and NO academy is set up
+    const showSetupWizard = user && !user.setup_completed && !user.academy?.setup_completed;
 
     const handleStaffSuccess = () => {
         setIsStaffSheetOpen(false);
         // Ideally show a toast or notification here
     };
 
-    if (isNewAccount) {
-        return (
-            <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-up">
-                {/* Header */}
-                <div className="bg-slate-900 rounded-3xl p-8 md:p-12 text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-4">
-                            <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
-                                Getting Started
-                            </span>
-                        </div>
-                        <h1 className="text-4xl md:text-5xl font-black mb-4">Welcome, Commander.</h1>
-                        <p className="text-slate-400 text-lg max-w-2xl">
-                            Your kingdom is ready. Complete these essential missions to activate your operations center.
-                        </p>
-
-                        {/* Progress */}
-                        <div className="mt-8 max-w-sm">
-                            <div className="flex justify-between text-sm font-bold mb-2">
-                                <span className="text-emerald-400">Setup Progress</span>
-                                <span>25%</span>
-                            </div>
-                            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                                <div className="h-full w-1/4 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Checklist Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <ChecklistWidget
-                        title="Create Account"
-                        desc="Your secure owner profile is active."
-                        icon={Rocket}
-                        isCompleted={true}
-                    />
-                    <ChecklistWidget
-                        title="Add First Staff"
-                        desc="Invite a coach or manager to help."
-                        icon={UserPlus}
-                        isCompleted={false}
-                        onClick={() => setIsStaffSheetOpen(true)}
-                    />
-                    <ChecklistWidget
-                        title="Add First Athlete"
-                        desc="Register your first member."
-                        icon={Users}
-                        isCompleted={false}
-                        onClick={() => navigate('/owner/athletes')}
-                    />
-                    <ChecklistWidget
-                        title="Setup Schedule"
-                        desc="Create a class or training session."
-                        icon={Calendar}
-                        isCompleted={false}
-                        onClick={() => navigate('/owner/schedule')}
-                    />
-                </div>
-
-                {/* Sheets */}
-                <BottomSheet
-                    isOpen={isStaffSheetOpen}
-                    onClose={() => setIsStaffSheetOpen(false)}
-                    title="Invite New Staff"
-                >
-                    <StaffInviteForm
-                        onSuccess={handleStaffSuccess}
-                        onCancel={() => setIsStaffSheetOpen(false)}
-                    />
-                </BottomSheet>
-            </div>
-        );
-    }
+    if (loading) return null; // Prevent modal flash during session check
 
     // --- STANDARD OPERATIONS VIEW (Existing) ---
     return (
-        <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-up">
+        <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-up relative">
+
+            {/* ONBOARDING MODAL (Overlay) */}
+            <SetupWizardModal
+                isOpen={!!showSetupWizard}
+                onComplete={() => {
+                    // Refresh session to update 'setup_completed' in UI
+                    checkSession();
+                }}
+            />
 
             {/* Header */}
             <div>

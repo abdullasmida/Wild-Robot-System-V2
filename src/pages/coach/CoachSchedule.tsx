@@ -41,13 +41,10 @@ const CoachSchedule = () => {
 
                 const { data, error } = await supabase
                     .from('staff_shifts')
-                    .select(`
-                        id,
-                        start_time,
-                        end_time,
-                        status,
-                        locations ( name )
-                    `)
+                    // Simplified query to fix 400 Error (Relationship mismatch)
+                    // TODO: Restore locations join once FK is verified.
+                    // Fetch shifts with location names
+                    .select('*, locations ( name )')
                     .eq('staff_id', user.id)
                     .order('start_time', { ascending: true });
 

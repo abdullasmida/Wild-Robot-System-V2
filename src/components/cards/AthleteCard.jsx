@@ -2,6 +2,8 @@ import React from 'react';
 import { Trophy, Activity, Calendar, MoreHorizontal } from 'lucide-react';
 
 const AthleteCard = ({ athlete }) => {
+    const fullName = `${athlete.first_name || ''} ${athlete.last_name || ''}`.trim() || 'Unknown Hero';
+
     // Derivations
     const calculateAge = (dob) => {
         if (!dob) return 'N/A';
@@ -27,8 +29,8 @@ const AthleteCard = ({ athlete }) => {
             <div className="px-6 -mt-12 mb-4">
                 <div className="relative inline-block">
                     <img
-                        src={athlete.photo_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${athlete.name}`}
-                        alt={athlete.name}
+                        src={athlete.photo_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${Math.random()}`}
+                        alt={fullName}
                         className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg bg-white object-cover"
                     />
                     <div className={`absolute bottom-0 right-0 w-6 h-6 rounded-full border-4 border-white ${athlete.status === 'active' ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
@@ -36,7 +38,7 @@ const AthleteCard = ({ athlete }) => {
 
                 <div className="mt-3 flex justify-between items-start">
                     <div>
-                        <h3 className="font-black text-slate-900 text-lg leading-tight">{athlete.name}</h3>
+                        <h3 className="font-black text-slate-900 text-lg leading-tight">{fullName}</h3>
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">
                             Age {calculateAge(athlete.dob)} • {athlete.gender || 'Athlete'}
                         </p>

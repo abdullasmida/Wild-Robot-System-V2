@@ -127,7 +127,7 @@ export const fetchWeekSessions = async (): Promise<Session[]> => {
             coach_id: 'coach-2',
             location_id: 'loc-1',
             start_time: setHours(addDays(TODAY, 1), 15).toISOString(),
-            end_time: setHours(addDays(TODAY, 1), 16).addMinutes(30).toISOString(),
+            end_time: addMinutes(setHours(addDays(TODAY, 1), 16), 30).toISOString(),
             status: 'scheduled',
             wibo_conflict_flag: false,
             batch: BATCHES[2],

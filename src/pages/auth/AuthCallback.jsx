@@ -23,7 +23,7 @@ const AuthCallback = () => {
                 // Check if this is a "Password Recovery" or "Invite" flow
                 // Usually indicated by type=recovery or type=invite in the URL, 
                 // but simpler to just check if the user needs setup.
-                navigate('/auth/setup-account');
+                navigate('/owner/dashboard');
             } else {
                 // Fallback
                 navigate('/login');

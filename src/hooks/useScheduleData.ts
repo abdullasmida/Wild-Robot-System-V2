@@ -48,8 +48,8 @@ export function useScheduleData(currentDate: Date, academyId: string | null) {
             // Should seed if empty? Ideally handled by onboarding, but for now just return what exists.
 
             // 2. Fetch Shifts (Visible Week)
-            // 2. Fetch Shifts (Visible Week) with joins
-            const { data: shifts } = await supabase
+            // 2. Fetch Shifts (Visible Week)
+            const { data: shifts, error: shiftError } = await supabase
                 .from('staff_shifts')
                 .select(`
                     id, 
@@ -59,11 +59,13 @@ export function useScheduleData(currentDate: Date, academyId: string | null) {
                     end_time, 
                     location_id,
                     staff_id,
-                    staff:staff_id ( id, first_name, last_name, avatar_url, role )
+                    staff:profiles!staff_id ( id, first_name, last_name, avatar_url, role )
                 `)
                 .eq('academy_id', academyId)
                 .gte('start_time', start)
                 .lte('start_time', end);
+
+            if (shiftError) console.error("Shift Fetch Error:", shiftError);
 
             // 3. Fetch Coaches (for Sidebar)
             const { data: coaches } = await supabase

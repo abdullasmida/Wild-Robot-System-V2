@@ -26,7 +26,7 @@ const AthletesRoster = () => {
                     .from('athletes')
                     .select('*')
                     .eq('academy_id', profile.academy_id)
-                    .ilike('name', `%${searchQuery}%`)
+                    .or(`first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%`) // Search both
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;

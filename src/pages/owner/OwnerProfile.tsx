@@ -25,11 +25,22 @@ export default function OwnerProfile() {
             try {
                 const { data: { user: currentUser } } = await supabase.auth.getUser();
                 if (currentUser) {
-                    const { data } = await supabase
+                    const { data, error } = await supabase
                         .from('profiles')
-                        .select('*')
+                        .select(`
+                            id, 
+                            first_name, 
+                            last_name, 
+                            email, 
+                            bio, 
+                            location, 
+                            avatar_url,
+                            academy:academies(name)
+                        `)
                         .eq('id', currentUser.id)
                         .single();
+
+                    if (error) throw error;
                     setProfile(data);
                 }
             } catch (error) {

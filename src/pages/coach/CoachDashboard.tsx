@@ -4,7 +4,16 @@ import { Link } from 'react-router-dom';
 import { CalendarDays, Users, Trophy, ArrowRight } from 'lucide-react';
 
 const CoachDashboard = () => {
-    const { profile } = useUser();
+    const { profile, loading } = useUser();
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh]">
+                <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-slate-400 font-medium animate-pulse">Loading Coach Portal...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
