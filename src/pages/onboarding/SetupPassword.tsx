@@ -2,52 +2,42 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Lock, Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, Loader2, CheckCircle, User } from 'lucide-react';
 
 const SetupPasswordPage = () => {
     const navigate = useNavigate();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-
-    // We expect the user to be "logged in" via the magic link (or auto-confirmed in local mode)
-    // Actually, for local dev fallback, the user is created with a temp password.
-    // In production (Email Invite), clicking the link logs them in (Exchange Code).
-
-    // However, since we are handling the 'Local Fallback' case primarily right now:
-    // The user technically has a temp password we generated. 
-    // To make this realistic: The user should probably use the Recovery Flow or Update User flow.
-
-    // BUT, simpler approach for this 'Invite' flow:
-    // The user clicks the link. If they are already authenticated (which they might be if they just clicked a magic link), great.
-    // If not, this page usually handles "Recovery" (Forgot Password) type tokens.
-
-    // ADJUSTMENT: Since we are using "SignUp" with a temp password in the fallback, 
-    // the user doesn't know the password to log in!
-    // So the fallback flow has a gap: The user exists but can't login.
-
-    // FIXING THE GAP:
-    // In the Fallback (Local Mode), we should probably set the password to something known OR better yet,
-    // Just realize that testing "Invite" locally requires checking the "Supabase Dashboard > Auth" to see the user.
-
-    // PROPOSAL for Setup Page:
-    // This page is for users who HAVE a session (via magic link) and want to set their PERMANENT password.
 
     useEffect(() => {
         const checkSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                // In a real magic link flow, the URL fragment handles the session setup automatically by Supabase client
-                // If no session, maybe they are taking too long or link expired.
-                // For now, let's just show a warning or redirect to login
+            if (session?.user) {
+                // Pre-fill name if we have it from metadata or existing profile
+                // But allow changing it.
+                // Fetch profile to see current values
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('first_name, last_name')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (profile) {
+                    setFirstName(profile.first_name || '');
+                    setLastName(profile.last_name || '');
+                }
+            } else {
                 console.log("No active session found on Setup Password page.");
             }
         };
         checkSession();
     }, []);
 
-    const handleUpdatePassword = async (e: React.FormEvent) => {
+    const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (password.length < 6) {
@@ -61,14 +51,35 @@ const SetupPasswordPage = () => {
 
         setIsLoading(true);
         try {
-            const { error } = await supabase.auth.updateUser({
-                password: password
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("No authenticated user found");
+
+            // 1. Update Password
+            const { error: pwdError } = await supabase.auth.updateUser({
+                password: password,
+                data: {
+                    full_name: `${firstName} ${lastName}`.trim()
+                }
             });
 
-            if (error) throw error;
+            if (pwdError) throw pwdError;
 
-            toast.success('Password Set Successfully! 🎉', {
-                description: 'You can now log in with your new password.'
+            // 2. Update Profile Name (Explicitly)
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .update({
+                    first_name: firstName,
+                    last_name: lastName
+                })
+                .eq('id', user.id);
+
+            if (profileError) {
+                console.warn("Profile update failed", profileError);
+                // Non-critical if password succeeded, but good to warn
+            }
+
+            toast.success('Account Setup Complete! 🎉', {
+                description: 'Welcome to the team!'
             });
 
             // Redirect to Onboarding or Dashboard
@@ -79,7 +90,7 @@ const SetupPasswordPage = () => {
 
         } catch (error: any) {
             console.error(error);
-            toast.error('Error setting password', { description: error.message });
+            toast.error('Error updating account', { description: error.message });
         } finally {
             setIsLoading(false);
         }
@@ -93,11 +104,39 @@ const SetupPasswordPage = () => {
                         <div className="mx-auto w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
                             <Lock className="w-6 h-6 text-emerald-600" />
                         </div>
-                        <h2 className="text-2xl font-bold text-slate-800">Setup Your Password</h2>
-                        <p className="text-slate-500 mt-2">Create a secure password to access your account.</p>
+                        <h2 className="text-2xl font-bold text-slate-800">Complete Account Setup</h2>
+                        <p className="text-slate-500 mt-2">Set your name and create a secure password.</p>
                     </div>
 
-                    <form onSubmit={handleUpdatePassword} className="space-y-6">
+                    <form onSubmit={handleUpdate} className="space-y-6">
+
+                        {/* Name Fields */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700">First Name</label>
+                                <input
+                                    type="text"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
+                                    placeholder="Jane"
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700">Last Name</label>
+                                <input
+                                    type="text"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none"
+                                    placeholder="Doe"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        {/* Password Fields */}
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-slate-700">New Password</label>
                             <div className="relative">
@@ -139,7 +178,7 @@ const SetupPasswordPage = () => {
                             {isLoading ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    Setting Password...
+                                    Updating...
                                 </>
                             ) : (
                                 <>

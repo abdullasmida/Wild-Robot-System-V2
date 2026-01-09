@@ -60,13 +60,8 @@ const DraggableCoach = ({ coach }) => {
 };
 
 export default function SchedulerSidebar({ academyId, staffList = [] }: { academyId: string | null, staffList: any[] }) {
-    // DraggableStaff is now driven by props, but we map it to ensure it flat structure if needed
-    // The hook returns { profile: ... }, so we map it if necessary or just use it.
-    // Let's assume passed staffList is already flattened or contains profile info.
-    // Based on hook: it returns [{ profile_id, ... profile: {...} }]
-
-    // We need to flatten it for the UI which expects simple coach object
-    const draggableStaff = staffList.map((s: any) => s.profile || s).filter(Boolean);
+    // We expect a clean list of profiles from the hook now (Phase 2 Sanitization)
+    const draggableStaff = staffList || [];
     const loading = false; // Controlled by parent if needed, but for sidebar list it's fine to be instant updates
 
     return (

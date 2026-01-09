@@ -99,14 +99,41 @@ const Login = ({ initialMode }) => {
                 .single();
 
             if (!profile) {
-                // FALLBACK: Metadata check
-                const metaRole = data.user.user_metadata?.role;
-                if (metaRole) {
-                    console.warn("Profile missing, using metadata fallback.");
-                    profile = { role: metaRole };
+                console.warn("Profile missing. Attempting Self-Healing...");
+
+                // SELF-HEALING: Attempt to create the missing profile automatically
+                const metaRole = data.user.user_metadata?.role || 'coach';
+                const metaFirst = data.user.user_metadata?.first_name || email.split('@')[0];
+                const metaLast = data.user.user_metadata?.last_name || '';
+
+                const { error: insertError } = await supabase
+                    .from('profiles')
+                    .insert({
+                        id: uid,
+                        email: email,
+                        role: metaRole,
+                        first_name: metaFirst,
+                        last_name: metaLast,
+                        created_at: new Date().toISOString()
+                    });
+
+                if (insertError) {
+                    console.error("Self-Healing Failed:", insertError);
+                    // Fallback to metadata if insert fails (e.g. RLS blocks)
+                    if (data.user.user_metadata?.role) {
+                        profile = { role: data.user.user_metadata.role };
+                    } else {
+                        throw new Error(`Login Failed: ${insertError.message || 'Profile denied'} (Code: ${insertError.code})`);
+                    }
                 } else {
-                    // Critical Error
-                    throw new Error("SYSTEM ERROR: User profile missing. Please contact support.");
+                    // Retry Fetch
+                    const { data: retryProfile } = await supabase
+                        .from('profiles')
+                        .select('role')
+                        .eq('id', uid)
+                        .single();
+
+                    profile = retryProfile;
                 }
             }
 
@@ -128,7 +155,11 @@ const Login = ({ initialMode }) => {
 
             // 4. Success Redirect
             if (isStaff) {
-                navigate('/workspace/dashboard');
+                if (userRole === 'owner' || userRole === 'admin' || userRole === 'manager') {
+                    navigate('/command/dashboard');
+                } else {
+                    navigate('/staff/dashboard');
+                }
             } else {
                 navigate('/athlete');
             }

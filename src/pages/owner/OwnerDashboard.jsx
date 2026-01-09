@@ -4,41 +4,32 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ActionCard from '../../components/dashboard/ActionCard';
-import BottomSheet from '../../components/ui/BottomSheet';
-import StaffInviteForm from '../../components/forms/StaffInviteForm';
-import SetupWizardModal from '../../components/onboarding/SetupWizardModal';
+import UniversalAddModal from '../../components/modals/UniversalAddModal';
+import AnnouncementModal from '../../components/modals/AnnouncementModal';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 const OwnerDashboard = () => {
     const navigate = useNavigate();
-    const { user, checkSession, loading } = useAuthStore();
+    const { user, loading } = useAuthStore();
 
     // Sheet State
     const [isStaffSheetOpen, setIsStaffSheetOpen] = useState(false);
-
-    // Derived State
-    // Only show wizard if user is loaded, NOT setup, and NO academy is set up
-    const showSetupWizard = user && !user.setup_completed && !user.academy?.setup_completed;
+    const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
 
     const handleStaffSuccess = () => {
         setIsStaffSheetOpen(false);
         // Ideally show a toast or notification here
     };
 
-    if (loading) return null; // Prevent modal flash during session check
+    console.log('👑 OwnerDashboard: Render Cycle', { user, loading, setup: user?.setup_completed });
+    if (loading) {
+        console.log('👑 OwnerDashboard: Loading...');
+        return null;
+    }
 
     // --- STANDARD OPERATIONS VIEW (Existing) ---
     return (
         <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-up relative">
-
-            {/* ONBOARDING MODAL (Overlay) */}
-            <SetupWizardModal
-                isOpen={!!showSetupWizard}
-                onComplete={() => {
-                    // Refresh session to update 'setup_completed' in UI
-                    checkSession();
-                }}
-            />
 
             {/* Header */}
             <div>
@@ -49,8 +40,8 @@ const OwnerDashboard = () => {
             {/* 1. OPERATIONS GRID (Quick Actions) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <ActionCard title="Add New Staff" desc="Invite coaches or managers." icon={UserPlus} color="bg-emerald-600" onClick={() => setIsStaffSheetOpen(true)} />
-                <ActionCard title="Send Announcement" desc="Notify all staff & athletes." icon={Megaphone} color="bg-blue-600" onClick={() => { }} />
-                <ActionCard title="Review Payroll" desc="Check salaries & treasury." icon={Clock} color="bg-purple-600" onClick={() => navigate('/owner/finance')} />
+                <ActionCard title="Send Announcement" desc="Notify all staff & athletes." icon={Megaphone} color="bg-blue-600" onClick={() => setIsAnnouncementOpen(true)} />
+                <ActionCard title="Review Payroll" desc="Check salaries & treasury." icon={Clock} color="bg-purple-600" onClick={() => navigate('/workspace/finance')} />
             </div>
 
             {/* 2. THE FEED (Activity Log) */}
@@ -84,16 +75,17 @@ const OwnerDashboard = () => {
             </div>
 
             {/* Sheets */}
-            <BottomSheet
+            <UniversalAddModal
                 isOpen={isStaffSheetOpen}
                 onClose={() => setIsStaffSheetOpen(false)}
-                title="Invite New Staff"
-            >
-                <StaffInviteForm
-                    onSuccess={handleStaffSuccess}
-                    onCancel={() => setIsStaffSheetOpen(false)}
-                />
-            </BottomSheet>
+                type="staff"
+                academyId={user?.academy_id}
+            />
+
+            <AnnouncementModal
+                isOpen={isAnnouncementOpen}
+                onClose={() => setIsAnnouncementOpen(false)}
+            />
         </div>
     );
 };

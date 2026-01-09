@@ -20,7 +20,17 @@ const WorkspaceDashboard = () => {
         );
     }
 
-    if (!user) return null;
+    // SAFETY CHECK: If user is authed but query for profile failed/is null
+    if (!user) return null; // Should be handled by AuthGuard but safe to keep
+
+    // Explicit Profile Check (sometimes user object exists but profile fetch is lagging/failed)
+    // We can check if we have the role to determine if profile is 'ready'
+    if (!user.role && !role) {
+        // Attempted to use 'role' variable from below too early? 
+        // Let's just check the store user object which should have metadata. 
+        // Ideally relying on the 'role' derived below.
+    }
+
 
     const role = (user.role || '').toLowerCase();
 
@@ -35,17 +45,38 @@ const WorkspaceDashboard = () => {
 
     // --- Role Based Rendering ---
 
-    // 1. Finance Dashboard (Accountant / Owner)
-    // Note: 'VIEW_FINANCE_DASHBOARD' check
-    // if (canViewFinance) return <FinanceDashboard />; // Future
+    // 1. Finance Dashboard
+    if (canViewFinance) return <div className="p-8">Finance Dashboard (Coming Soon)</div>;
 
     // 2. Coach Dashboard
     if (canViewCoachContext) {
-        return <CoachDashboard />;
+        return (
+            <div className="space-y-6">
+                <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl flex justify-between items-center pattern-grid-lg">
+                    <div>
+                        <h1 className="text-2xl font-black tracking-tight">Field Operations</h1>
+                        <p className="text-slate-400 font-medium">Ready to train the next generation, Coach {user.first_name || 'Coach'}?</p>
+                    </div>
+                    <div className="text-3xl">🧢</div>
+                </div>
+                <CoachDashboard />
+            </div>
+        );
     }
 
     // 3. Owner / Default Dashboard
-    return <OwnerDashboard />;
+    return (
+        <div className="space-y-6">
+            <div className="bg-emerald-600 text-white p-6 rounded-3xl shadow-xl flex justify-between items-center pattern-grid-lg">
+                <div>
+                    <h1 className="text-2xl font-black tracking-tight">Command Center</h1>
+                    <p className="text-emerald-100 font-bold">Welcome back, Commander {user.first_name || 'Owner'}.</p>
+                </div>
+                <div className="text-3xl">👑</div>
+            </div>
+            <OwnerDashboard />
+        </div>
+    );
 };
 
 export default WorkspaceDashboard;

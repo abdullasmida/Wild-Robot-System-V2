@@ -32,7 +32,7 @@ export default function SidebarUserItem() {
     return (
         <div className="space-y-2">
             <button
-                onClick={() => navigate('/owner/profile')}
+                onClick={() => navigate('/workspace/profile')}
                 className="flex items-center gap-3 w-full p-2 hover:bg-white rounded-lg transition-colors text-left group border border-transparent hover:border-slate-200 hover:shadow-sm"
             >
                 <UserAvatar
@@ -51,8 +51,8 @@ export default function SidebarUserItem() {
                 </div>
             </button>
 
-            {/* Operator Mode Toggle (Only for Owners/Staff) */}
-            {['owner', 'head_coach', 'coach'].includes(displayProfile.role) && (
+            {/* Operator Mode Toggle (Only for Owners) */}
+            {['owner'].includes(displayProfile.role) && (
                 <OperatorToggle />
             )}
         </div>

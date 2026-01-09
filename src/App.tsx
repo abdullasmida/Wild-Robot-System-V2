@@ -22,13 +22,16 @@ import AcademySetup from './pages/owner/AcademySetup';
 import StaffRoster from './pages/owner/StaffRoster';
 import AthletesRoster from './pages/owner/AthletesRoster';
 import SchedulePage from './pages/SchedulePage';
+import OwnerProfile from './pages/owner/OwnerProfile';
+import FinanceDashboard from './pages/owner/FinanceDashboard.jsx';
 
 // Athlete Pages
 import AthleteHome from './pages/Athlete/AthleteHome';
 import Achievements from './pages/Athlete/Achievements';
 
-// Workspace
-import WorkspaceLayout from './layouts/WorkspaceLayout';
+// Workspace / Dual Track
+import CommandLayout from './layouts/CommandLayout';
+import StaffLayout from './layouts/StaffLayout';
 import WorkspaceDashboard from './pages/workspace/WorkspaceDashboard';
 
 // Coach Pages (Specific routes used in Workspace or Onboarding)
@@ -130,42 +133,52 @@ function App() {
                     {/* OWNER ROUTES */}
 
                     {/* -----------------------------------------------------------------
-                        🚀 WORKSPACE ZONE (Unified Staff Portal)
+                        👑 COMMAND ZONE (Owners & Managers)
                     ----------------------------------------------------------------- */}
                     <Route
-                        path="/workspace"
+                        path="/command"
                         element={
                             <AuthGuard requiredZone="staff">
-                                <WorkspaceLayout />
+                                <CommandLayout />
                             </AuthGuard>
                         }
                     >
-                        <Route index element={<Navigate to="/workspace/dashboard" replace />} />
+                        <Route index element={<Navigate to="/command/dashboard" replace />} />
                         <Route path="dashboard" element={<WorkspaceDashboard />} />
-
-                        {/* Modules (Shared or Role-Guarded internally) */}
                         <Route path="schedule" element={<SchedulePage />} />
-                        {/* Note: SchedulePage needs to support 'Coach' mode or be wrapped. 
-                            For now, owners use SchedulePage. Coaches use CoachSchedule.
-                            We need a 'SmartSchedule' wrapper? 
-                            Let's map directly for now and trust the user role context if the component handles it, 
-                            OR use a specific wrapper if they differ significantly.
-                            Owner's SchedulePage might be too admin-heavy.
-                        */}
-
-                        <Route path="feed" element={<ComingSoon title="Live Feed" />} />
+                        <Route path="feed" element={<ComingSoon title="Live Operations Feed" />} />
                         <Route path="staff" element={<StaffRoster />} />
                         <Route path="athletes" element={<AthletesRoster />} />
-                        <Route path="treasury" element={<ComingSoon title="Treasury" />} />
-                        <Route path="settings" element={<ComingSoon title="Settings" />} />
+                        <Route path="finance" element={<FinanceDashboard />} />
+                        <Route path="settings" element={<ComingSoon title="HQ Settings" />} />
                     </Route>
 
                     {/* -----------------------------------------------------------------
-                        🏰 LEGACY ZONES (Fallbacks)
+                        🧢 STAFF ZONE (Field Ops)
                     ----------------------------------------------------------------- */}
-                    {/* 🔄 Legacy Redirects (Catch-all for old bookmarks) */}
-                    <Route path="/owner/*" element={<Navigate to="/workspace/dashboard" replace />} />
-                    <Route path="/coach/*" element={<Navigate to="/workspace/dashboard" replace />} />
+                    <Route
+                        path="/staff"
+                        element={
+                            <AuthGuard requiredZone="staff">
+                                <StaffLayout />
+                            </AuthGuard>
+                        }
+                    >
+                        <Route index element={<Navigate to="/staff/dashboard" replace />} />
+                        {/* Reuse WorkspaceDashboard but it will adapt based on role/layout context? 
+                            Ideally we should have StaffDashboard. For now re-use. */}
+                        <Route path="dashboard" element={<WorkspaceDashboard />} />
+                        <Route path="schedule" element={<CoachSchedule />} /> {/* Staff see CoachSchedule */}
+                        <Route path="chat" element={<ComingSoon title="Team Chat" />} />
+                        <Route path="profile" element={<OwnerProfile />} /> {/* Re-use profile for now */}
+                    </Route>
+
+                    {/* -----------------------------------------------------------------
+                        🔄 LEGACY REDIRECTS (Migration Helper)
+                    ----------------------------------------------------------------- */}
+                    <Route path="/workspace/*" element={<Navigate to="/command/dashboard" replace />} />
+                    <Route path="/owner/*" element={<Navigate to="/command/dashboard" replace />} />
+                    <Route path="/coach/*" element={<Navigate to="/staff/dashboard" replace />} />
 
                     {/* 🔄 Legacy Redirects */}
                     <Route path="/student/*" element={<Navigate to="/athlete" replace />} />

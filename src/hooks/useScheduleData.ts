@@ -45,20 +45,17 @@ export function useScheduleData(currentDate: Date, academyId: string | null) {
                 .select('id, name')
                 .eq('academy_id', academyId);
 
-            // Should seed if empty? Ideally handled by onboarding, but for now just return what exists.
-
-            // 2. Fetch Shifts (Visible Week)
             // 2. Fetch Shifts (Visible Week)
             const { data: shifts, error: shiftError } = await supabase
                 .from('staff_shifts')
                 .select(`
                     id, 
-                    status, 
                     cost_estimate, 
                     start_time, 
                     end_time, 
                     location_id,
                     staff_id,
+                    status,
                     staff:profiles!staff_id ( id, first_name, last_name, avatar_url, role )
                 `)
                 .eq('academy_id', academyId)
@@ -67,20 +64,28 @@ export function useScheduleData(currentDate: Date, academyId: string | null) {
 
             if (shiftError) console.error("Shift Fetch Error:", shiftError);
 
-            // 3. Fetch Coaches (for Sidebar)
-            const { data: coaches } = await supabase
-                .from('staff_details')
-                .select(`
-                    profile_id,
-                    specialization,
-                    job_title,
-                    availability,
-                    profile:profile_id ( id, first_name, last_name, avatar_url, role )
-                `)
-                .eq('academy_id', academyId);
+            // 3. Fetch Coaches (Source of Truth: Profiles)
+            // We fetch ALL staff profiles to ensure the sidebar is populated correctly
+            const { data: rawCoaches } = await supabase
+                .from('profiles')
+                .select('id, first_name, last_name, role, avatar_url')
+                .eq('academy_id', academyId)
+                .in('role', ['coach', 'head_coach', 'manager', 'admin']);
 
+            // Map to the format expected by the UI (combining names)
+            const coaches = (rawCoaches as any[] || []).map(p => ({
+                id: p.id,
+                first_name: p.first_name,
+                last_name: p.last_name,
+                full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+                role: p.role,
+                avatar_url: p.avatar_url,
+                // Legacy fields (optional, can be null safe)
+                specialization: '',
+                job_title: p.role
+            }));
 
-            // 3. Calculate Stats
+            // 4. Calculate Stats
             let totalBudget = 0;
             let draftCount = 0;
             let totalHours = 0;
@@ -101,11 +106,11 @@ export function useScheduleData(currentDate: Date, academyId: string | null) {
             setData({
                 branches: branches || [],
                 shifts: shifts || [],
-                coaches: coaches || [],
+                coaches: coaches || [], // Now robust
                 settings: { weekStartDay: 1, workingHours: {} },
                 stats: {
                     totalBudget,
-                    actualCost: 0, // In future: Calc for 'completed' shifts only
+                    actualCost: 0,
                     totalHours
                 },
                 publishStatus: {
@@ -113,7 +118,7 @@ export function useScheduleData(currentDate: Date, academyId: string | null) {
                     draftCount
                 },
                 loading: false,
-                refresh: fetchSchedule // Pass self to allow manual re-fetch
+                refresh: fetchSchedule
             });
 
         } catch (error) {

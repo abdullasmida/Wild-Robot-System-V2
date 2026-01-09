@@ -30,7 +30,12 @@ const AthletesRoster = () => {
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-                setAthletes(data || []);
+                // Add virtual full_name for easier rendering if needed, though card should handle it
+                const sanitized = (data || []).map(a => ({
+                    ...a,
+                    full_name: `${a.first_name || ''} ${a.last_name || ''}`.trim() || 'Unknown Hero'
+                }));
+                setAthletes(sanitized);
             }
         } catch (err) {
             console.error("Fetch errors:", err);

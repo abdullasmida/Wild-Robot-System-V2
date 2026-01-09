@@ -30,6 +30,9 @@ import SidebarUserItem from '../components/dashboard/SidebarUserItem';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useAppStore } from '@/stores/useAppStore';
 import { usePermission } from '@/config/permissions';
+import TeamChatWidget from '@/components/chat/TeamChatWidget';
+
+import AcademySetup from '@/pages/owner/AcademySetup';
 
 // --- Utils ---
 function cn(...inputs: ClassValue[]) {
@@ -41,6 +44,20 @@ const WorkspaceLayout = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isQuickActionOpen, setIsQuickActionOpen] = useState(false);
 
+    // Context & Permissions
+    const { user, loading } = useAuthStore();
+    const { viewMode } = useAppStore();
+    const academy = user?.academy;
+
+    // --- PRESTIGE PROTOCOL: INTERCEPTOR ---
+    // Rule: If Owner & (No Academy OR No Academy Name), force Setup.
+    const hasAcademyName = user?.academy?.name && user.academy.name.trim().length > 0;
+
+    // Block access if loading is done, user is owner, and name is missing
+    if (!loading && user?.role === 'owner' && !hasAcademyName) {
+        return <AcademySetup />;
+    }
+
     // Modal States
     const [isUniversalModalOpen, setIsUniversalModalOpen] = useState(false);
     const [universalModalTab, setUniversalModalTab] = useState(0);
@@ -49,11 +66,6 @@ const WorkspaceLayout = () => {
 
     // Notification State
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-
-    // Context & Permissions
-    const { user } = useAuthStore();
-    const { viewMode } = useAppStore();
-    const academy = user?.academy;
 
     // --- Dynamic Sidebar Logic ---
     const showFinance = usePermission('VIEW_FINANCE');
@@ -155,7 +167,14 @@ const WorkspaceLayout = () => {
                 <div className="h-16 flex items-center px-6 border-b border-slate-200">
                     <Link to="/workspace/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         <div className="w-8 h-8 bg-gradient-to-tr from-emerald-500 to-cyan-500 rounded-lg mr-3 shadow-lg shadow-emerald-500/20" />
-                        <span className="font-bold text-lg tracking-tight text-slate-900">Wild Robot</span>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-lg tracking-tight text-slate-900 leading-none">
+                                {academy?.name || 'Wild Robot'}
+                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                {user?.role === 'owner' ? 'Command Center' : 'HQ Operations'}
+                            </span>
+                        </div>
                     </Link>
                 </div>
 
@@ -315,6 +334,9 @@ const WorkspaceLayout = () => {
                     </aside>
                 </div>
             )}
+
+            {/* Team Chat Widget */}
+            <TeamChatWidget />
         </div>
     );
 };

@@ -31,6 +31,7 @@ export default function OwnerProfile() {
                             id, 
                             first_name, 
                             last_name, 
+                            role,
                             email, 
                             bio, 
                             location, 
@@ -71,6 +72,8 @@ export default function OwnerProfile() {
         </div>
     );
 
+    const isOwner = profile?.role === 'owner';
+
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 p-4 md:p-8 animate-in fade-in duration-500">
 
@@ -88,7 +91,7 @@ export default function OwnerProfile() {
                         {/* Avatar with White Border */}
                         <div className="w-32 h-32 rounded-full border-4 border-white bg-white overflow-hidden shadow-xl relative ring-1 ring-slate-100">
                             {profile?.avatar_url ? (
-                                <img src={profile.avatar_url} alt="Owner" className="w-full h-full object-cover" />
+                                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400">
                                     <User size={48} />
@@ -103,15 +106,17 @@ export default function OwnerProfile() {
 
                     <div className="pb-2 md:pb-4">
                         <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 text-slate-900">
-                            {profile?.first_name || 'Owner'} {profile?.last_name}
+                            {profile?.first_name || 'User'} {profile?.last_name}
                             {/* Verification Badge */}
-                            <span title="Verified Owner" className="text-emerald-500 bg-emerald-50 rounded-full p-0.5">
-                                <ShieldCheck size={20} fill="currentColor" className="text-emerald-500" />
-                            </span>
+                            {isOwner && (
+                                <span title="Verified Owner" className="text-emerald-500 bg-emerald-50 rounded-full p-0.5">
+                                    <ShieldCheck size={20} fill="currentColor" className="text-emerald-500" />
+                                </span>
+                            )}
                         </h1>
                         <p className="text-slate-500 font-medium text-base md:text-lg flex items-center gap-2 mt-1">
                             <span className="px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-600 text-xs md:text-sm font-bold uppercase tracking-wider">
-                                Academy Owner
+                                {profile?.role?.replace('_', ' ') || 'Staff Member'}
                             </span>
                             <span className="text-slate-300">•</span>
                             <span className="text-sm md:text-base">{profile?.email}</span>
@@ -163,7 +168,7 @@ export default function OwnerProfile() {
                         <div className="mt-8">
                             <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Bio</h4>
                             <p className="text-sm leading-relaxed text-slate-500 italic bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                "{profile?.bio || "Managing the academy's operations and success."}"
+                                "{profile?.bio || (isOwner ? "Managing the academy's operations and success." : "Dedicated staff member.")}"
                             </p>
                         </div>
                     </div>
@@ -172,19 +177,21 @@ export default function OwnerProfile() {
                 {/* Right Column: System Status & Quick Stats */}
                 <div className="md:col-span-2 space-y-6">
 
-                    {/* Academy Status Card */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-emerald-200 hover:shadow-md transition-all group">
-                        <div>
-                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                Subscription Status
-                            </h3>
-                            <p className="text-slate-500 text-sm mt-1">Your academy is running on the <span className="font-semibold text-emerald-600">Enterprise Plan</span>.</p>
+                    {/* Academy Status Card (Owner Only) */}
+                    {isOwner && (
+                        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-emerald-200 hover:shadow-md transition-all group">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                    Subscription Status
+                                </h3>
+                                <p className="text-slate-500 text-sm mt-1">Your academy is running on the <span className="font-semibold text-emerald-600">Enterprise Plan</span>.</p>
+                            </div>
+                            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100 font-bold text-sm">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Active
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100 font-bold text-sm">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            Active
-                        </div>
-                    </div>
+                    )}
 
                     {/* Responsibility Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -201,38 +208,42 @@ export default function OwnerProfile() {
                             </div>
                         </div>
 
-                        <div className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
-                                <Database size={60} />
-                            </div>
-                            <div className="relative z-10">
-                                <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Database Usage</h4>
-                                <div className="flex items-baseline gap-2">
-                                    <p className="text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">12%</p>
-                                    <span className="text-xs text-slate-400">of 10GB</span>
+                        {isOwner && (
+                            <>
+                                <div className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                                        <Database size={60} />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Database Usage</h4>
+                                        <div className="flex items-baseline gap-2">
+                                            <p className="text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">12%</p>
+                                            <span className="text-xs text-slate-400">of 10GB</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <div className="bg-white p-5 rounded-xl border border-slate-200 hover:border-purple-500 hover:shadow-md transition-all cursor-pointer group relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
-                                <Clock size={60} />
-                            </div>
-                            <div className="relative z-10">
-                                <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Next Backup</h4>
-                                <p className="text-2xl font-bold text-slate-900 group-hover:text-purple-600 transition-colors">02:00 AM</p>
-                            </div>
-                        </div>
+                                <div className="bg-white p-5 rounded-xl border border-slate-200 hover:border-purple-500 hover:shadow-md transition-all cursor-pointer group relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                                        <Clock size={60} />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Next Backup</h4>
+                                        <p className="text-2xl font-bold text-slate-900 group-hover:text-purple-600 transition-colors">02:00 AM</p>
+                                    </div>
+                                </div>
 
-                        <div className="bg-white p-5 rounded-xl border border-slate-200 hover:border-orange-500 hover:shadow-md transition-all cursor-pointer group relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
-                                <Key size={60} />
-                            </div>
-                            <div className="relative z-10">
-                                <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Admin Access</h4>
-                                <p className="text-2xl font-bold text-slate-900 group-hover:text-orange-500 transition-colors">Super Admin</p>
-                            </div>
-                        </div>
+                                <div className="bg-white p-5 rounded-xl border border-slate-200 hover:border-orange-500 hover:shadow-md transition-all cursor-pointer group relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500">
+                                        <Key size={60} />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <h4 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Admin Access</h4>
+                                        <p className="text-2xl font-bold text-slate-900 group-hover:text-orange-500 transition-colors">Super Admin</p>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                 </div>
