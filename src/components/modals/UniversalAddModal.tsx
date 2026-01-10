@@ -47,13 +47,22 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff', aca
             return;
         }
 
+        // CRITICAL: Ensure Academy ID is linked
+        if (!academyId) {
+            toast.error('System Error: Academy ID Missing', {
+                description: 'Could not link user to academy. Please refresh and try again.',
+            });
+            console.error('UniversalAddModal: academyId prop is missing!');
+            return;
+        }
+
         setIsLoading(true);
 
         const payload = {
             ...formData,
             role: selectedRole,
             color: '#10B981',
-            academyId: academyId || 'default',
+            academyId: academyId, // Strict usage
         };
 
         try {
@@ -140,13 +149,12 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff', aca
                         last_name: cleanPayload.lastName,
                         role: cleanPayload.role,
                         avatar_color: cleanPayload.color,
-                        academy_id: payload.academyId === 'default' ? null : payload.academyId
+                        academy_id: payload.academyId // ID is now guaranteed by validation above
                     }, { onConflict: 'id' });
 
                 if (profileError) throw new Error("Profile Creation Failed: " + profileError.message);
 
-                // Note: academyId prop is used here. 
-                // Correction: we need to use 'academyId' from props or payload
+                // Note: academyId prop is used here.
 
 
 
@@ -160,7 +168,7 @@ export default function UniversalAddModal({ isOpen, onClose, type = 'staff', aca
                         job_title: payload.role,
                         specialization: payload.specialization || null,
                         salary_config: { rate: parseFloat(payload.salary) || 0, type: 'monthly' }
-                    });
+                    }, { onConflict: 'profile_id' });
 
                 if (detailsError) throw new Error("Staff Details Failed: " + detailsError.message);
 

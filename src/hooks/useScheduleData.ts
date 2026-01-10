@@ -45,24 +45,48 @@ export function useScheduleData(currentDate: Date, academyId: string | null) {
                 .select('id, name')
                 .eq('academy_id', academyId);
 
-            // 2. Fetch Shifts (Visible Week)
-            const { data: shifts, error: shiftError } = await supabase
-                .from('staff_shifts')
+            // 2. Fetch Shifts (Visible Week) from SESSIONS
+            const { data: rawSessions, error: shiftError } = await supabase
+                .from('sessions')
                 .select(`
                     id, 
-                    cost_estimate, 
                     start_time, 
                     end_time, 
                     location_id,
-                    staff_id,
-                    status,
-                    staff:profiles!staff_id ( id, first_name, last_name, avatar_url, role )
+                    is_published,
+                    job_type,
+                    notes_for_staff,
+                    capacity,
+                    locations ( name, color ),
+                    assignments:session_assignments (
+                        id,
+                        status,
+                        staff_id,
+                        staff:profiles ( id, first_name, last_name, avatar_url, role )
+                    )
                 `)
                 .eq('academy_id', academyId)
                 .gte('start_time', start)
                 .lte('start_time', end);
 
             if (shiftError) console.error("Shift Fetch Error:", shiftError);
+
+            // POST-PROCESS: Flatten for UI
+            const shifts = (rawSessions || []).map(s => {
+                // Determine primary coach (first assignment) for UI Capsule compat
+                const primaryAssignment = s.assignments?.[0];
+                const coach = primaryAssignment?.staff;
+
+                return {
+                    ...s,
+                    // Backward compat fields
+                    coach: coach, // The capsule uses 'coach.avatar_url'
+                    staff: coach,
+                    status: s.is_published ? 'published' : 'draft', // UI Status
+                    title: s.job_type || 'Shift',
+                    cost_estimate: 0 // Calculate if needed, removed from sessions table
+                };
+            });
 
             // 3. Fetch Coaches (Source of Truth: Profiles)
             // We fetch ALL staff profiles to ensure the sidebar is populated correctly
@@ -91,9 +115,10 @@ export function useScheduleData(currentDate: Date, academyId: string | null) {
             let totalHours = 0;
 
             shifts?.forEach(shift => {
-                totalBudget += Number(shift.cost_estimate || 0);
+                // Estimation logic (simplified, as sessions table doesn't have cost yet)
+                totalBudget += 0;
 
-                if (shift.status === 'draft') {
+                if (!shift.is_published) {
                     draftCount++;
                 }
 

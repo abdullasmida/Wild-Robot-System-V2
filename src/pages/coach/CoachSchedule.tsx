@@ -3,180 +3,217 @@ import { useUser } from '@/context/UserContext';
 import { supabase } from '@/lib/supabase';
 import {
     format,
-    startOfMonth,
-    endOfMonth,
-    eachDayOfInterval,
-    isSameDay,
-    isToday,
-    addMonths,
-    subMonths,
     startOfWeek,
-    endOfWeek,
+    addDays,
+    isSameDay,
     parseISO,
-    isSameMonth
+    isToday,
+    startOfDay,
+    endOfDay,
+    isBefore
 } from 'date-fns';
-import { Calendar as CalendarIcon, MapPin, Clock, ChevronLeft, ChevronRight, X, AlertCircle, DollarSign } from 'lucide-react';
+import {
+    ChevronLeft,
+    ChevronRight,
+    ShieldCheck,
+    MapPin,
+    Clock,
+    Briefcase,
+    Calendar,
+    Users,
+    MoreHorizontal
+} from 'lucide-react';
 import { toast } from 'sonner';
+import ShiftDetailsDrawer from '@/components/scheduler/ShiftDetailsDrawer';
+import { Session } from '@/types/custom';
+import UserAvatar from '@/components/ui/UserAvatar';
 
 const CoachSchedule = () => {
-    const { user } = useUser();
-    const [shifts, setShifts] = useState<any[]>([]);
+    const { user, profile } = useUser();
+    const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [viewDate, setViewDate] = useState(new Date());
 
-    // Modals
-    const [selectedShift, setSelectedShift] = useState<any | null>(null);
+    // Drawer State
+    const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+    const [isDrawerOpen, setDrawerOpen] = useState(false);
 
     // Fetch Data
-    useEffect(() => {
-        let mounted = true;
-        const fetchShifts = async () => {
-            if (!user) return;
-            setLoading(true);
-            try {
-                // Fetch shifts with Location Details (Name, Color, Address)
-                const { data, error } = await supabase
-                    .from('staff_shifts')
-                    .select(`
+    const fetchSchedule = async () => {
+        if (!profile?.academy_id) return;
+        setLoading(true);
+        try {
+            // Calculate Week Range
+            const start = startOfWeek(viewDate, { weekStartsOn: 1 }).toISOString();
+            const end = addDays(startOfWeek(viewDate, { weekStartsOn: 1 }), 7).toISOString();
+
+            // Fetch Sessions
+            const { data, error } = await supabase
+                .from('sessions')
+                .select(`
+                    *,
+                    locations ( name, color, address ),
+                    assignments:session_assignments (
                         id,
-                        start_time,
-                        end_time,
                         status,
-                        cost_estimate,
-                        location_id,
-                        locations ( name, address, color )
-                    `)
-                    .eq('staff_id', user.id)
-                    .order('start_time', { ascending: true });
+                        staff_id,
+                        role,
+                        staff:profiles ( id, first_name, last_name, avatar_url )
+                    )
+                `)
+                .eq('academy_id', profile.academy_id)
+                .eq('is_published', true) // CRITICAL: Only show published shifts to staff
+                .gte('start_time', start)
+                .lt('start_time', end)
+                .order('start_time', { ascending: true });
 
-                if (error) throw error;
-                if (mounted) setShifts(data || []);
-            } catch (err) {
-                console.error("Error loading schedule:", err);
-                toast.error("Failed to load schedule.");
-            } finally {
-                if (mounted) setLoading(false);
+            if (error) {
+                console.error("Supabase Error:", error);
+                throw error;
             }
-        };
-
-        fetchShifts();
-        return () => { mounted = false; };
-    }, [user]);
-
-    // --- Calendar Logic ---
-
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
-    const startDate = startOfWeek(monthStart);
-    const endDate = endOfWeek(monthEnd);
-
-    const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
-
-    const getDayShifts = (day: Date) => {
-        return shifts.filter(shift => isSameDay(parseISO(shift.start_time), day));
+            // Cast to strictly typed Session array
+            setSessions((data as any[]) || []);
+        } catch (err: any) {
+            console.error("Error loading schedule:", err);
+            toast.error("Failed to load schedule");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // Calculate Shift Duration for Display (e.g. "4h")
-    const getDurationLabel = (start: string, end: string) => {
-        const s = new Date(start);
-        const e = new Date(end);
-        const hours = (e.getTime() - s.getTime()) / (1000 * 60 * 60);
-        return `${hours}h`;
+    useEffect(() => {
+        fetchSchedule();
+    }, [profile, viewDate]);
+
+    // Calendar Navigation
+    const weekStart = startOfWeek(viewDate, { weekStartsOn: 1 });
+    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+    // Grouping
+    const getMyShifts = (day: Date) => {
+        return sessions.filter(s =>
+            isSameDay(parseISO(s.start_time), day) &&
+            s.assignments?.some((a) => a.staff_id === user?.id)
+        );
+    };
+
+    const getOpenShifts = (day: Date) => {
+        return sessions.filter(s =>
+            isSameDay(parseISO(s.start_time), day) &&
+            s.is_open_for_claim === true &&
+            !s.assignments?.some((a) => a.staff_id === user?.id)
+        );
+    };
+
+    const openDrawer = (session: Session) => {
+        setSelectedSession(session);
+        setDrawerOpen(true);
     };
 
     return (
-        <div className="max-w-6xl mx-auto space-y-6 pb-12">
+        <div className="flex flex-col h-[calc(100vh-64px)] bg-slate-50 overscroll-none font-sans">
 
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">My Schedule</h1>
-                    <p className="text-slate-500 font-medium">View your assigned shifts and classes.</p>
+            {/* --- HEADER --- */}
+            <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 shadow-sm z-30 flex-shrink-0">
+                <div className="flex items-center gap-4">
+                    <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                        <Calendar className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">
+                            My Schedule
+                        </h1>
+                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mt-1">
+                            {format(weekStart, 'MMM d')} - {format(addDays(weekStart, 6), 'MMM d, yyyy')}
+                        </p>
+                    </div>
                 </div>
 
-                {/* Date Nav */}
-                <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm self-start">
-                    <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-2 hover:bg-slate-50 rounded-lg text-slate-600">
-                        <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <div className="px-4 font-bold text-slate-800 w-40 text-center select-none">
-                        {format(currentDate, 'MMMM yyyy')}
-                    </div>
-                    <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-2 hover:bg-slate-50 rounded-lg text-slate-600">
-                        <ChevronRight className="w-5 h-5" />
-                    </button>
+                <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                    <button onClick={() => setViewDate(addDays(viewDate, -7))} className="p-2 hover:bg-white rounded-md shadow-sm transition-all text-slate-500 hover:text-slate-800"><ChevronLeft className="w-5 h-5" /></button>
+                    <button onClick={() => setViewDate(new Date())} className="px-4 text-xs font-bold hover:bg-white rounded-md transition-all text-slate-600 hover:text-slate-900">Today</button>
+                    <button onClick={() => setViewDate(addDays(viewDate, 7))} className="p-2 hover:bg-white rounded-md shadow-sm transition-all text-slate-500 hover:text-slate-800"><ChevronRight className="w-5 h-5" /></button>
                 </div>
             </div>
 
-            {/* MONTH CALENDAR GRID */}
-            <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+            {/* --- MOBILE VIEW (< md) --- */}
+            {/* Same as before but polished */}
+            <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-6">
+                {weekDays.map((day) => {
+                    const myShifts = getMyShifts(day);
+                    const openShifts = getOpenShifts(day);
+                    const isTodayDay = isToday(day);
+                    const hasEvents = myShifts.length > 0 || openShifts.length > 0;
 
-                {/* Weekday Headers */}
-                <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} className="py-3 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">
-                            {day}
+                    return (
+                        <div key={day.toISOString()} className={`relative pl-4 border-l-2 ${isTodayDay ? 'border-blue-500' : 'border-slate-200'}`}>
+                            <div className="mb-3 flex items-baseline gap-2">
+                                <span className={`text-lg font-black ${isTodayDay ? 'text-blue-600' : 'text-slate-900'}`}>{format(day, 'EEEE')}</span>
+                                <span className="text-sm font-medium text-slate-400">{format(day, 'MMM d')}</span>
+                            </div>
+
+                            {!hasEvents && (
+                                <div className="text-xs text-slate-400 italic mb-2">No shifts scheduled</div>
+                            )}
+
+                            <div className="space-y-3">
+                                {/* OPEN SHIFTS */}
+                                {openShifts.map(session => (
+                                    <ShiftCardMobile key={session.id} session={session} onClick={() => openDrawer(session)} type="open" />
+                                ))}
+                                {/* MY SHIFTS */}
+                                {myShifts.map(session => (
+                                    <ShiftCardMobile key={session.id} session={session} onClick={() => openDrawer(session)} type="assigned" />
+                                ))}
+                            </div>
                         </div>
-                    ))}
-                </div>
+                    );
+                })}
+            </div>
 
-                {/* Days Grid */}
-                <div className="grid grid-cols-7 auto-rows-[minmax(120px,auto)] divide-x divide-slate-100/50">
-                    {calendarDays.map((day, idx) => {
-                        const dayShifts = getDayShifts(day);
-                        const isCurrentMonth = isSameMonth(day, monthStart);
-                        const isTodayDate = isToday(day);
-
-                        // If NOT current month, grey out background
-                        const bgClass = !isCurrentMonth ? 'bg-slate-50/50' : 'bg-white';
+            {/* --- DESKTOP VIEW (>= md): 7-Col Grid --- */}
+            <div className="hidden md:flex flex-1 overflow-hidden">
+                <div className="flex-1 grid grid-cols-7 h-full divide-x divide-slate-200">
+                    {weekDays.map((day) => {
+                        const myShifts = getMyShifts(day);
+                        const openShifts = getOpenShifts(day);
+                        const isTodayDay = isToday(day);
 
                         return (
-                            <div
-                                key={day.toISOString()}
-                                className={`relative p-2 border-b border-slate-100 ${bgClass} group transition-colors hover:bg-slate-50`}
-                            >
-                                {/* Date Number */}
-                                <div className="flex justify-between items-start mb-2">
-                                    <span
-                                        className={`
-                                            text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full
-                                            ${isTodayDate ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400'}
-                                            ${!isCurrentMonth ? 'opacity-50' : ''}
-                                        `}
-                                    >
+                            <div key={day.toISOString()} className={`flex flex-col h-full bg-slate-50 relative group ${isTodayDay ? 'bg-blue-50/30' : ''}`}>
+
+                                {/* Header */}
+                                <div className={`px-2 py-3 text-center border-b border-slate-200 ${isTodayDay ? 'bg-blue-600 text-white shadow-md z-10' : 'bg-white'}`}>
+                                    <div className={`text-[10px] font-bold uppercase tracking-widest mb-0.5 ${isTodayDay ? 'text-blue-100' : 'text-slate-400'}`}>
+                                        {format(day, 'EEE')}
+                                    </div>
+                                    <div className={`text-xl font-black ${isTodayDay ? 'text-white' : 'text-slate-700'}`}>
                                         {format(day, 'd')}
-                                    </span>
+                                    </div>
                                 </div>
 
-                                {/* Shift Capsules */}
-                                <div className="space-y-1.5">
-                                    {dayShifts.map(shift => {
-                                        const locColor = shift.locations?.color || '#10B981';
+                                {/* Body */}
+                                <div className="flex-1 overflow-y-auto p-2 space-y-2">
 
-                                        return (
-                                            <button
-                                                key={shift.id}
-                                                onClick={() => setSelectedShift(shift)}
-                                                className="w-full text-left px-2 py-1.5 rounded-md border text-xs font-bold transition-transform hover:scale-[1.02] active:scale-95 shadow-sm truncate flex items-center gap-1.5"
-                                                style={{
-                                                    backgroundColor: `${locColor}15`, // 15% opacity hex
-                                                    borderColor: `${locColor}40`,     // 40% opacity border
-                                                    color: '#334155'
-                                                }}
-                                            >
-                                                <div
-                                                    className="w-1.5 h-1.5 rounded-full shrink-0"
-                                                    style={{ backgroundColor: locColor }}
-                                                />
-                                                <span className="truncate">
-                                                    {format(parseISO(shift.start_time), 'HH:mm')}
-                                                </span>
-                                                <span className="opacity-50 font-medium ml-auto">
-                                                    {getDurationLabel(shift.start_time, shift.end_time)}
-                                                </span>
-                                            </button>
-                                        );
-                                    })}
+                                    {/* Open Shifts Zone */}
+                                    {openShifts.length > 0 && (
+                                        <div className="bg-emerald-50/50 rounded-lg p-1.5 border border-emerald-100/50 space-y-2 mb-2">
+                                            <div className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider text-center py-1">Open Shifts</div>
+                                            {openShifts.map(session => (
+                                                <ShiftCard key={session.id} session={session} onClick={() => openDrawer(session)} type="open" />
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* My Shifts Zone */}
+                                    {myShifts.map(session => (
+                                        <ShiftCard key={session.id} session={session} onClick={() => openDrawer(session)} type="assigned" />
+                                    ))}
+
+                                    {/* Empty State Pattern */}
+                                    {!openShifts.length && !myShifts.length && (
+                                        <div className="h-full w-full opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/diagonal-stripes.png')] pointer-events-none" />
+                                    )}
                                 </div>
                             </div>
                         );
@@ -184,102 +221,125 @@ const CoachSchedule = () => {
                 </div>
             </div>
 
-            {/* Shift Details Modal (Read Only) */}
-            {selectedShift && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in zoom-in-95 duration-200">
-                        {/* Header with Color Match */}
-                        <div
-                            className="h-24 relative p-6 flex flex-col justify-end"
-                            style={{ backgroundColor: selectedShift.locations?.color || '#10B981' }}
-                        >
-                            <button
-                                onClick={() => setSelectedShift(null)}
-                                className="absolute top-4 right-4 p-1.5 bg-black/20 hover:bg-black/30 text-white rounded-full transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                            <h3 className="text-white font-black text-xl leading-none drop-shadow-sm">
-                                {selectedShift.title || 'Training Session'}
-                            </h3>
-                        </div>
+            <ShiftDetailsDrawer
+                isOpen={isDrawerOpen}
+                onClose={() => setDrawerOpen(false)}
+                session={selectedSession}
+                onActionComplete={fetchSchedule}
+            />
 
-                        <div className="p-6 space-y-6">
-
-                            {/* Time & Pay */}
-                            <div className="flex items-center gap-4">
-                                <div className="flex-1 space-y-1">
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Time</p>
-                                    <div className="flex items-center gap-2 text-slate-900 font-bold">
-                                        <Clock className="w-4 h-4 text-emerald-500" />
-                                        <span>
-                                            <span>
-                                                {(selectedShift.start_time && selectedShift.end_time) ? (
-                                                    `${format(parseISO(selectedShift.start_time), 'HH:mm')} - ${format(parseISO(selectedShift.end_time), 'HH:mm')}`
-                                                ) : 'Time Not Set'}
-                                            </span>
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-slate-500 font-medium">
-                                        {format(parseISO(selectedShift.start_time), 'EEEE, MMMM do')}
-                                    </p>
-                                </div>
-                                <div className="w-px h-10 bg-slate-100" />
-                                <div className="flex-1 space-y-1">
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Est. Pay</p>
-                                    <div className="flex items-center gap-1 text-slate-900 font-bold">
-                                        <DollarSign className="w-4 h-4 text-emerald-500" />
-                                        <span>{selectedShift.cost_estimate || 0}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Location */}
-                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-3">
-                                <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0">
-                                    <MapPin className="w-5 h-5 text-slate-400" />
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-slate-900 text-sm">
-                                        {selectedShift.locations?.name || 'Unknown Location'}
-                                    </h4>
-                                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                                        {selectedShift.locations?.address || 'No address provided'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Status and Clock In */}
-                            <div className="flex gap-2">
-                                <div className="flex-1 p-3 rounded-lg border border-slate-200 bg-white text-center">
-                                    <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Status</span>
-                                    <span className={`
-                                        inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold capitalize
-                                        ${selectedShift.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}
-                                    `}>
-                                        {selectedShift.status === 'completed' ? 'Completed' : 'Upcoming'}
-                                    </span>
-                                </div>
-                                <button
-                                    disabled={selectedShift.status === 'completed'}
-                                    onClick={() => {
-                                        toast.success("Clocked In Successfully! ⏱️");
-                                        setSelectedShift(null);
-                                    }}
-                                    className="flex-1 bg-slate-900 text-white rounded-lg font-bold text-sm shadow-lg shadow-slate-900/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                >
-                                    <Clock className="w-4 h-4" />
-                                    {selectedShift.status === 'completed' ? 'Done' : 'Clock In'}
-                                </button>
-                            </div>
-
-                        </div>
+            {/* DEBUGGING AID (Temporary) - Remove after fixing */}
+            <div className="p-4 bg-slate-900 text-slate-400 text-xs font-mono m-4 rounded-lg overflow-auto max-h-64">
+                <p className="font-bold text-white mb-2">🔍 DEBUGGER</p>
+                <p>User ID: {user?.id}</p>
+                <p>Academy ID: {profile?.academy_id}</p>
+                <p>Raw Sessions Fetched: {sessions.length}</p>
+                {sessions.length > 0 && (
+                    <div className="mt-2 border-t border-slate-700 pt-2">
+                        <p>First Session Sample:</p>
+                        <p>ID: {sessions[0].id}</p>
+                        <p>Is Published: {String(sessions[0].is_published)}</p>
+                        <p>Assignments Count: {sessions[0].assignments?.length}</p>
+                        {sessions[0].assignments?.length ? (
+                            <p>Assigned Staff ID: {sessions[0].assignments[0].staff_id}</p>
+                        ) : <p>No Assignments</p>}
                     </div>
-                </div>
-            )}
-
+                )}
+            </div>
         </div>
     );
 };
+
+// --- SUB-COMPONENTS ---
+
+const ShiftCard = ({ session, onClick, type }: { session: Session, onClick: () => void, type: 'open' | 'assigned' }) => {
+    const startTime = parseISO(session.start_time);
+    const endTime = parseISO(session.end_time);
+
+    // Dynamic border color
+    const borderColor = type === 'open' ? '#10b981' : (session.locations?.color || '#3b82f6');
+    const bgColor = type === 'open' ? 'bg-white' : 'bg-white';
+
+    return (
+        <div
+            onClick={onClick}
+            className={`
+                relative rounded-lg shadow-sm border border-slate-200 
+                cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200
+                group overflow-hidden ${bgColor}
+            `}
+        >
+            {/* Color Strip */}
+            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: borderColor }} />
+
+            <div className="pl-3 p-2.5">
+                {/* Header: Time */}
+                <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-bold text-slate-700 font-mono tracking-tight">
+                        {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}
+                    </span>
+                    {type === 'open' && (
+                        <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                    )}
+                </div>
+
+                {/* Body: Title & Location */}
+                <div className="mb-2">
+                    <h4 className="font-bold text-sm text-slate-900 leading-tight truncate pr-2">
+                        {session.title || session.job_type}
+                    </h4>
+                    <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-500 font-medium truncate">
+                        <MapPin className="w-3 h-3 text-slate-400" />
+                        {session.locations?.name || 'Remote'}
+                    </div>
+                </div>
+
+                {/* Footer: Crew Avatars */}
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
+                        {type === 'open' ? 'Claim' : 'Crew'}
+                    </span>
+                    <div className="flex -space-x-1.5">
+                        {session.assignments?.slice(0, 3).map((a: any) => (
+                            <div key={a.id} className="w-5 h-5 rounded-full ring-1 ring-white bg-slate-100 flex items-center justify-center overflow-hidden">
+                                <UserAvatar user={a.staff} className="w-full h-full text-[8px]" />
+                            </div>
+                        ))}
+                        {(session.assignments?.length || 0) > 3 && (
+                            <div className="w-5 h-5 rounded-full ring-1 ring-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-500">
+                                +
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+const ShiftCardMobile = ({ session, onClick, type }: { session: Session, onClick: () => void, type: 'open' | 'assigned' }) => {
+    const startTime = parseISO(session.start_time);
+    const endTime = parseISO(session.end_time);
+    const borderColor = type === 'open' ? '#10b981' : (session.locations?.color || '#3b82f6');
+
+    return (
+        <div
+            onClick={onClick}
+            className="bg-white rounded-xl shadow-sm border border-slate-100 relative overflow-hidden active:scale-95 transition-transform flex"
+        >
+            <div className="w-1.5 bg-slate-200" style={{ backgroundColor: borderColor }} />
+            <div className="p-3 flex-1">
+                <div className="flex justify-between items-start mb-1">
+                    <h3 className="font-bold text-slate-900">{session.title || session.job_type}</h3>
+                    {type === 'open' && <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 rounded">OPEN</span>}
+                </div>
+                <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                    <span className="flex items-center gap-1 font-mono"><Clock className="w-3.5 h-3.5" /> {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}</span>
+                    <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {session.locations?.name || 'Remote'}</span>
+                </div>
+            </div>
+        </div>
+    )
+}
 
 export default CoachSchedule;

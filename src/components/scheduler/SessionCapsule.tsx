@@ -18,7 +18,7 @@ interface SessionCapsuleProps {
 
 export const SessionCapsule: React.FC<SessionCapsuleProps> = ({ session, style }) => {
     const { isOver, setNodeRef } = useDroppable({
-        id: session.id,
+        id: `session|${session.id}`, // NEW: Prefix for reliable drop detection
         data: { type: 'session', session },
     });
 
@@ -26,41 +26,54 @@ export const SessionCapsule: React.FC<SessionCapsuleProps> = ({ session, style }
     const endTime = new Date(session.end_time);
     const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // minutes
 
-    // Dynamic Neon Styles based on Batch Color or Status
-    // Using inline styles for dynamic colors usually, but here using Tailwind classes mapped in mockData
-    // session.batch.color (e.g. 'bg-rose-500')
+    // Dynamic Color Logic
+    const baseColor = session.locations?.color ? `bg-[${session.locations.color}]` : 'bg-slate-700';
+    // Fallback if Tailwind doesn't support dynamic arb values well without safelist:
+    // We might need style={{ backgroundColor: session.locations?.color }} if useScheduleData returns hex.
 
-    const baseColor = session.batch.color || 'bg-slate-700';
+    const isPublished = session.is_published ?? true; // Default to true for backward comp if missing
 
-    // Conflict Animation
-    const isConflict = session.wibo_conflict_flag;
-
+    // Status Styles
     const statusStyles = {
         scheduled: 'border-l-4',
         completed: 'opacity-70 grayscale',
         cancelled: 'opacity-50 line-through',
     };
 
+    const isConflict = false; // TODO: Implement conflict logic
+
     return (
         <div
             ref={setNodeRef}
-            style={style}
+            style={{
+                ...style,
+                backgroundColor: session.locations?.color || undefined
+            }}
             className={cn(
-                "relative rounded-xl p-2 text-xs text-white shadow-lg transition-all duration-300 group overflow-hidden",
-                "flex flex-col justify-between hover:z-10 hover:scale-[1.02]",
-                baseColor,
-                statusStyles[session.status],
-                isConflict ? "animate-pulse ring-2 ring-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]" : "shadow-[0_0_10px_rgba(0,0,0,0.3)]",
-                isOver ? "ring-2 ring-white scale-105" : "",
-                !session.coach && !isConflict && "border-2 border-dashed border-white/30" // Visual cue for unassigned
+                "relative rounded-xl p-3 mb-2 text-xs text-white shadow-sm transition-all duration-200 group overflow-hidden w-full cursor-pointer",
+                "flex flex-col justify-between hover:z-10 hover:scale-[1.02] hover:shadow-md min-h-[90px]",
+                !session.locations?.color && "bg-slate-700",
+
+                // Draft Mode Visuals
+                !isPublished && "border-2 border-dashed border-slate-300 opacity-80 bg-[url('https://www.transparenttextures.com/patterns/diagonal-stripes.png')]",
+
+                isConflict ? "animate-pulse ring-2 ring-red-500" : "hover:ring-2 hover:ring-opacity-50 hover:ring-slate-300",
+                isOver ? "ring-2 ring-emerald-400 scale-[1.03] z-50 shadow-xl" : "",
             )}
         >
+            {/* Draft Badge */}
+            {!isPublished && (
+                <div className="absolute top-0 right-0 bg-slate-200 text-slate-600 text-[9px] px-1.5 py-0.5 rounded-bl-lg font-bold border-b border-l border-slate-300 z-20">
+                    DRAFT
+                </div>
+            )}
+
             {/* Background Glow Effect */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-black/20 pointer-events-none" />
 
             {/* Header: Time & Warning */}
-            <div className="relative flex justify-between items-start z-10 w-full">
-                <span className="font-mono font-bold opacity-90 tracking-tighter">
+            <div className="relative flex justify-between items-start z-10 w-full mb-1">
+                <span className="font-mono font-bold opacity-90 tracking-tighter text-[10px]">
                     {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}
                 </span>
                 {isConflict && (
@@ -68,10 +81,10 @@ export const SessionCapsule: React.FC<SessionCapsuleProps> = ({ session, style }
                 )}
             </div>
 
-            {/* Body: Batch Name */}
-            <div className="relative z-10 my-1">
-                <h4 className="font-bold text-sm leading-tight truncate">{session.batch.name}</h4>
-                <span className="text-[10px] uppercase tracking-wide opacity-80">{session.batch.level_name}</span>
+            {/* Body: Job Type / Title */}
+            <div className="relative z-10 my-1 flex-1">
+                <h4 className="font-bold text-sm leading-tight truncate">{session.title || session.job_type || 'Shift'}</h4>
+                <span className="text-[10px] uppercase tracking-wide opacity-80">{session.job_type}</span>
             </div>
 
             {/* Footer: Coach Assignment */}

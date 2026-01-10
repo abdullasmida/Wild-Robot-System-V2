@@ -9,6 +9,43 @@ export interface ProfileWithAcademy extends Profile {
 
 export type UserRole = Profile['role'];
 
+// --- Scheduler Types ---
+export interface Session extends Database['public']['Tables']['sessions']['Row'] {
+    // New Fields
+    job_type?: string;
+    is_published?: boolean;
+    notes_for_staff?: string;
+    title?: string;
+    capacity?: number;
+    is_open_for_claim?: boolean;
+
+    // Relations
+    locations?: {
+        name: string;
+        color?: string;
+        address?: string;
+    } | null;
+
+    assignments?: {
+        id: string;
+        staff_id: string;
+        status: string;
+        role?: string;
+        staff?: {
+            id: string;
+            first_name: string;
+            last_name: string;
+            avatar_url: string;
+            role?: string;
+        };
+    }[];
+
+    // Legacy / Convenience mappings
+    coach?: any; // For backward compatibility with Capsule / Drag
+    staff?: any;
+    batch?: any; // Deprecated
+}
+
 // --- Gamification & Skills Types ---
 
 // Assuming these tables exist based on schema description, even if not in supabase.ts yet

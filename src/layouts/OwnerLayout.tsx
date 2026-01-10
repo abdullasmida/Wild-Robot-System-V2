@@ -23,6 +23,7 @@ import { twMerge } from 'tailwind-merge';
 
 // Imports for Modals
 import UniversalAddModal from '../components/modals/UniversalAddModal';
+import CreateAcademyModal from '../components/modals/CreateAcademyModal';
 import NewShiftModal from '../components/modals/NewShiftModal';
 import RecruitHeroesModal from '../components/modals/RecruitHeroesModal';
 import NotificationsDrawer from '../components/notifications/NotificationsDrawer';
@@ -71,14 +72,33 @@ const OwnerLayout = () => {
         setIsUniversalModalOpen(true);
     };
 
-    const { user } = useAuthStore(); // Get user from store
+    const { user, checkSession } = useAuthStore(); // Get user & session refresher
     const { viewMode } = useAppStore();
     const academy = user?.academy; // Derive academy from user profile
+
+    // Force Academy Setup for new Owners
+    const [isAcademySetupOpen, setIsAcademySetupOpen] = useState(false);
+
+    React.useEffect(() => {
+        if (user?.role === 'owner' && !user?.academy_id) {
+            setIsAcademySetupOpen(true);
+        }
+    }, [user]);
+
+    const handleAcademyCreated = async () => {
+        await checkSession(); // Refresh profile to get the new academy_id
+        setIsAcademySetupOpen(false);
+    };
 
     return (
         <div className="flex h-screen bg-slate-50 text-slate-900 font-sans selection:bg-emerald-500/30">
 
             {/* Modals Layer */}
+            <CreateAcademyModal
+                isOpen={isAcademySetupOpen}
+                onClose={() => { /* Prevent closing if required, or allow generic close */ }}
+                onSuccess={handleAcademyCreated}
+            />
             <UniversalAddModal
                 isOpen={isUniversalModalOpen}
                 onClose={() => setIsUniversalModalOpen(false)}

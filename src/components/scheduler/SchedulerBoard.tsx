@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     DndContext,
     DragOverlay,
@@ -16,36 +16,38 @@ import {
     startOfWeek,
     format,
     isSameDay,
-    differenceInMinutes,
-    startOfDay,
     setHours,
     addWeeks,
-    subWeeks
+    subWeeks,
+    isToday,
+    setMinutes
 } from 'date-fns';
 import { SessionCapsule } from './SessionCapsule';
-import { fetchWeekSessions, Session, COACHES, Profile } from './mockData';
-import UserAvatar from '../ui/UserAvatar';
 import SchedulerSidebar from './SchedulerSidebar';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Filter } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { ScheduleControlBar } from './ScheduleControlBar';
 import { useScheduleData } from '../../hooks/useScheduleData';
 import { supabase } from '../../supabaseClient';
 import { toast } from 'sonner';
+import { Session } from '../../types/custom';
+import UserAvatar from '../ui/UserAvatar';
+import { QuickCreatePopover } from './QuickCreatePopover';
+import { Plus } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-
-
 export const SchedulerBoard = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [view, setView] = useState<'day' | 'week'>('day');
+    const [view, setView] = useState<'day' | 'week'>('week'); // Default to week
     const [selectedBranchId, setSelectedBranchId] = useState('all');
     const [userAcademyId, setUserAcademyId] = useState<string | null>(null);
     const [isPublishing, setIsPublishing] = useState(false);
+
+    // Quick Create State (The "Ghost" Logic)
+    const [quickDraft, setQuickDraft] = useState<{ date: Date | null }>({ date: null });
 
     // Auth & Init
     useEffect(() => {
@@ -65,35 +67,98 @@ export const SchedulerBoard = () => {
     // Hooks
     const scheduleData = useScheduleData(currentDate, userAcademyId);
 
-    // Legacy Mock fallback (until DB is full)
+    // Active Drag State
     const [activeDragItem, setActiveDragItem] = useState<any>(null);
 
-    // Fetch Sessions
-    // Data derived directly from the hook
-    const sessions = (scheduleData.shifts || []).map(s => ({
-        ...s,
-        coach: s.staff // Map 'staff' relation to 'coach' prop expected by UI
-    }));
+    // Fetch Sessions & Map to UI
+    const sessions = (scheduleData.shifts || []) as Session[];
 
-    // Legacy support for sidebar props if needed, but sidebar should now likely use its own hook or props
-    const staffList = scheduleData.coaches || [];
+    // Helpers
+    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-    // Handlers
+    const getSessionsForDay = (date: Date) => {
+        return sessions.filter(s => isSameDay(new Date(s.start_time), date))
+            .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    };
+
+    const handleDateChange = (direction: 'prev' | 'next' | 'today') => {
+        if (direction === 'today') {
+            setCurrentDate(new Date());
+        } else if (direction === 'prev') {
+            setCurrentDate(prev => addWeeks(prev, -1));
+        } else {
+            setCurrentDate(prev => addWeeks(prev, 1));
+        }
+    };
+
+    // --- QUICK CREATE HANDLER ---
+    const handleQuickCreateSubmit = async (data: any) => {
+        if (!quickDraft.date) return;
+
+        try {
+            // Parse Times
+            const [startHour, startMin] = data.startTime.split(':').map(Number);
+            const [endHour, endMin] = data.endTime.split(':').map(Number);
+
+            const startDateTime = setMinutes(setHours(quickDraft.date, startHour), startMin);
+            let endDateTime = setMinutes(setHours(quickDraft.date, endHour), endMin);
+
+            // Handle overnight (if end is before start, assume next day)
+            if (endDateTime < startDateTime) {
+                endDateTime = addDays(endDateTime, 1);
+            }
+
+            // Resolve Branch
+            const targetLocationId = data.locationId;
+            const locationObj = scheduleData.branches.find(b => b.id === targetLocationId);
+
+            const { error } = await supabase
+                .from('sessions')
+                .insert({
+                    academy_id: userAcademyId,
+                    location_id: targetLocationId,
+                    start_time: startDateTime.toISOString(),
+                    end_time: endDateTime.toISOString(),
+                    is_published: false,
+                    is_open_for_claim: true,
+                    job_type: 'Coach', // Default
+                    title: 'Open Shift',
+                    capacity: data.quantity,
+                    branch: locationObj?.name || 'Main Branch'
+                });
+
+            if (error) throw error;
+
+            toast.success("Shift Created! 🚀");
+            scheduleData.refresh();
+            setQuickDraft({ date: null }); // Close popover
+
+        } catch (e: any) {
+            console.error(e);
+            toast.error("Failed to create shift");
+        }
+    };
+
     const handlePublish = async () => {
         setIsPublishing(true);
         try {
-            const { error } = await supabase
-                .from('staff_shifts')
-                .update({ status: 'published' })
-                .eq('academy_id', userAcademyId)
-                .eq('status', 'draft');
+            const startStr = startOfWeek(currentDate, { weekStartsOn: 1 }).toISOString();
+            const endStr = addDays(startOfWeek(currentDate, { weekStartsOn: 1 }), 7).toISOString();
+
+            const { data, error } = await supabase
+                .rpc('publish_weekly_shifts', {
+                    p_academy_id: userAcademyId,
+                    p_start_date: startStr,
+                    p_end_date: endStr
+                });
 
             if (error) throw error;
 
             toast.success("Schedule Published!", {
-                description: `${scheduleData.publishStatus.draftCount} shifts are now visible to staff.`
+                description: `${data} shifts have been notified.`
             });
-            scheduleData.refresh(); // Refresh hook data
+            scheduleData.refresh();
         } catch (e) {
             toast.error("Failed to publish schedule");
             console.error(e);
@@ -102,55 +167,8 @@ export const SchedulerBoard = () => {
         }
     };
 
-    const handleDateChange = (direction: 'prev' | 'next' | 'today') => {
-        if (direction === 'today') {
-            setCurrentDate(new Date());
-        } else if (direction === 'prev') {
-            setCurrentDate(prev => view === 'week' ? subWeeks(prev, 1) : addDays(prev, -1));
-        } else {
-            setCurrentDate(prev => view === 'week' ? addWeeks(prev, 1) : addDays(prev, 1));
-        }
-    };
-
-
-    // Time Config
-    const START_HOUR = 8; // 8 AM
-    const HOURS_COUNT = 14; // Until 10 PM
-    const PIXELS_PER_HOUR = 120; // Width of one hour column
-    const timelineWidth = HOURS_COUNT * PIXELS_PER_HOUR;
-
-    const hours = Array.from({ length: HOURS_COUNT }, (_, i) => START_HOUR + i);
-    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-
-    // Current selected day for the main view (Legacy Logic adaptation)
-    const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-    const activeDay = view === 'week' ? currentDate : currentDate; // Simplified for now
-
-    // DND Handlers
+    // --- DND HANDLERS ---
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
-
-    // Helper: Calculate Shift Cost
-    const calculateShiftCost = (staff: Profile, sessionDurationMinutes: number, currentDailyMinutes: number = 0) => {
-        if (staff.employmentType === 'part_time') {
-            const cost = (sessionDurationMinutes / 60) * (staff.hourlyRate || 0);
-            return { cost, status: 'Standard' };
-        }
-
-        if (staff.employmentType === 'full_time') {
-            const dailyLimitMinutes = (staff.dailyHoursLimit || 9) * 60;
-            // distinct: pre-shift total vs post-shift total
-            if (currentDailyMinutes > dailyLimitMinutes) {
-                return { cost: 0, status: 'Overtime' }; // Entire shift is overtime (simplified)
-            }
-            if (currentDailyMinutes + sessionDurationMinutes > dailyLimitMinutes) {
-                return { cost: 0, status: 'Partial Overtime' };
-            }
-            return { cost: 0, status: 'Standard' };
-        }
-
-        return { cost: 0, status: 'Unknown' };
-    };
 
     const handleDragStart = (event: DragStartEvent) => {
         setActiveDragItem(event.active.data.current);
@@ -160,83 +178,143 @@ export const SchedulerBoard = () => {
         const { active, over } = event;
         setActiveDragItem(null);
 
-        // Debugging
-        console.log('DROPPED OVER:', over?.id);
+        if (!over) return;
+        const draggedStaff = active.data.current?.coach;
+        if (!draggedStaff) return;
 
-        if (over && active.data.current?.type === 'coach') {
-            const coach = active.data.current.coach;
+        try {
+            // CASE B: Dropped on Session Card -> ASSIGN
+            if (String(over.id).startsWith('session|')) {
+                const sessionId = String(over.id).split('|')[1];
 
-            // Scenario 1: Dropped on an existing session (Swap/Replace)
-            // (To be implemented if needed, current ID format session-xxxx)
+                const { error } = await supabase.from('session_assignments').insert({
+                    session_id: sessionId,
+                    staff_id: draggedStaff.id,
+                    status: 'confirmed',
+                    role: draggedStaff.role || 'Coach'
+                });
 
-            // Scenario 2: Dropped on a Grid Cell (New Shift)
-            if (String(over.id).startsWith('cell|')) {
-                const [_, locationId, isoTime] = String(over.id).split('|');
+                if (error) {
+                    if (error.code === '23505') { // Duplicate assignment
+                        toast.info(`${draggedStaff.first_name} is already assigned to this shift.`);
+                        return;
+                    }
+                    throw error;
+                }
+                toast.success(`Assigned ${draggedStaff.first_name} to shift`);
+                scheduleData.refresh();
+            }
 
-                console.log(`Creating shift for ${coach.full_name || coach.first_name} at ${locationId} @ ${isoTime}`);
+            // CASE C: Dropped on "Open Shifts" Header -> CREATE OPEN SHIFT
+            else if (String(over.id).startsWith('open|')) {
+                const dateStr = String(over.id).split('|')[1];
+                const targetDate = new Date(dateStr);
+                // We can potentially trigger the new Quick Create Popover here too if we wanted!
 
-                // 1. Calculate Shift Times
-                const startTime = new Date(isoTime);
-                // Safe date manipulation: set start, then add hours
-                let endTime = new Date(startTime);
-                endTime.setHours(endTime.getHours() + 4);
-                // Alternatively use date-fns: endTime = addHours(startTime, 4);
+                // Existing Logic:
+                const startTime = setHours(targetDate, 9);
+                const endTime = setHours(targetDate, 13);
+                let targetLocationId = selectedBranchId !== 'all' ? selectedBranchId : scheduleData.branches[0]?.id;
+                if (!targetLocationId && scheduleData.branches.length > 0) targetLocationId = scheduleData.branches[0].id;
 
-                // Ensure valid minutes
-                // endTime.setMinutes(startTime.getMinutes() + 60); // This was previous logic, seems odd (4h vs 60m?). 
-                // Let's stick to the user Request: "Fix Date Crash... Eliminate chain calls"
-                // The previous code was: const endTime = setHours(startTime, startTime.getHours() + 4);
-                // The crash largely comes from invalid dates or mutation of state.
+                if (!targetLocationId) {
+                    toast.error("No locations found.");
+                    return;
+                }
+                const locationObj = scheduleData.branches.find(b => b.id === targetLocationId);
 
-                // Let's just make a standard 1 hour shift for safety as per my previous logic comment "Let's do 1 for precision"
-                // But the code said +4 hours then +60 mins.
-                // Let's standardise to 1 hour.
-                endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
-
-                // 2. Insert into DB
-                try {
-                    const { error } = await supabase.from('staff_shifts').insert({
+                const { error } = await supabase
+                    .from('sessions')
+                    .insert({
                         academy_id: userAcademyId,
-                        staff_id: coach.id, // Ensure this maps to profile_id in DB
-                        location_id: locationId,
+                        location_id: targetLocationId,
                         start_time: startTime.toISOString(),
                         end_time: endTime.toISOString(),
-                        status: 'draft',
-                        cost_estimate: (coach.hourly_rate || 0) * 1 // 1 hour default
+                        is_published: false,
+                        is_open_for_claim: true,
+                        job_type: draggedStaff.role || 'Any',
+                        title: 'Open Shift',
+                        capacity: 1,
+                        branch: locationObj?.name || 'Main Branch'
                     });
 
-                    if (error) throw error;
-
-                    toast.success("Draft Shift Created");
-                    scheduleData.refresh(); // Reload data
-
-                } catch (e) {
-                    console.error("Drop create failed:", e);
-                    toast.error("Failed to create shift");
-                }
+                if (error) throw error;
+                toast.success("Created New Open Shift");
+                scheduleData.refresh();
             }
+
+            // CASE A: Dropped on Day Column -> CREATE ASSIGNED SHIFT
+            else if (String(over.id).startsWith('day|')) {
+                const dateStr = String(over.id).split('|')[1];
+                const targetDate = new Date(dateStr);
+
+                // Default Time: 09:00 AM - 01:00 PM (4 Hours)
+                const startTime = setHours(targetDate, 9);
+                const endTime = setHours(targetDate, 13);
+                let targetLocationId = selectedBranchId !== 'all' ? selectedBranchId : scheduleData.branches[0]?.id;
+                if (!targetLocationId && scheduleData.branches.length > 0) targetLocationId = scheduleData.branches[0].id;
+
+                if (!targetLocationId) {
+                    toast.error("No locations found.");
+                    return;
+                }
+                const locationObj = scheduleData.branches.find(b => b.id === targetLocationId);
+
+                const { data: sessionData, error: sessionError } = await supabase
+                    .from('sessions')
+                    .insert({
+                        academy_id: userAcademyId,
+                        location_id: targetLocationId,
+                        start_time: startTime.toISOString(),
+                        end_time: endTime.toISOString(),
+                        is_published: false,
+                        job_type: draggedStaff.role || 'Staff',
+                        title: `${draggedStaff.first_name}'s Shift`,
+                        capacity: 1,
+                        branch: locationObj?.name || 'Main Branch'
+                    })
+                    .select()
+                    .single();
+
+                if (sessionError) throw sessionError;
+
+                // Auto-assign the creator
+                const { error: assignError } = await supabase
+                    .from('session_assignments')
+                    .insert({
+                        session_id: sessionData.id,
+                        staff_id: draggedStaff.id,
+                        status: 'confirmed',
+                        role: draggedStaff.role
+                    });
+
+                if (assignError) throw assignError;
+
+                toast.success("New Draft Shift Created");
+                scheduleData.refresh();
+            }
+        } catch (e: any) {
+            console.error("Drag Action Failed:", e);
+            toast.error("Action failed", { description: e.message || "Unknown error" });
         }
     };
-
-    // Filter sessions for current view (Active Day)
-    const daySessions = sessions.filter(s => isSameDay(new Date(s.start_time), activeDay));
 
     return (
         <DndContext
             sensors={sensors}
-            collisionDetection={pointerWithin} // Improved collision for grid
+            collisionDetection={pointerWithin}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
             <div className="flex h-full bg-slate-50 text-slate-900 overflow-hidden font-sans">
 
-                {/* Sidebar: Coaches & Tools */}
-                <SchedulerSidebar academyId={userAcademyId} staffList={staffList} />
+                {/* SIDEBAR */}
+                <SchedulerSidebar academyId={userAcademyId} staffList={scheduleData.coaches || []} />
 
-                {/* Main Board */}
+                {/* MAIN CONTENT */}
                 <main className="flex-1 flex flex-col min-w-0 bg-slate-50">
 
-                    {/* NEW: Control Bar */}
+                    {/* CONTROL BAR */}
                     <ScheduleControlBar
                         branches={scheduleData.branches}
                         selectedBranchId={selectedBranchId}
@@ -251,120 +329,37 @@ export const SchedulerBoard = () => {
                         isPublishing={isPublishing}
                     />
 
-                    {/* Week Strip (Day View Context) */}
-                    <div className="h-14 border-b border-slate-200 flex items-center px-6 bg-white shadow-sm z-10">
-                        <div className="flex items-center gap-2">
-                            {weekDays.map((day, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => setCurrentDate(day)} // Jump to that day
-                                    className={cn(
-                                        "w-10 h-10 rounded-lg flex flex-col items-center justify-center text-xs transition-all",
-                                        isSameDay(day, currentDate)
-                                            ? "bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-200"
-                                            : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300"
-                                    )}
-                                >
-                                    <span>{format(day, 'E')}</span>
-                                    <span>{format(day, 'd')}</span>
-                                </button>
+                    {/* BOARD (7 Columns) */}
+                    <div className="flex-1 overflow-hidden relative border-t border-slate-200">
+                        <div className="absolute inset-0 flex divide-x divide-slate-200 overflow-x-auto">
+                            {weekDays.map((day) => (
+                                <DayColumn
+                                    key={day.toISOString()}
+                                    day={day}
+                                    isToday={isToday(day)}
+                                    sessions={getSessionsForDay(day)}
+                                    onDayClick={(d) => setQuickDraft({ date: d })}
+                                    quickDraftTarget={quickDraft.date}
+                                    onQuickCreate={handleQuickCreateSubmit}
+                                    onCloseQuickDraft={() => setQuickDraft({ date: null })}
+                                    locations={scheduleData.branches}
+                                />
                             ))}
                         </div>
                     </div>
 
-                    {/* Timeline Grid */}
-                    <div className="flex-1 overflow-auto relative bg-slate-50/50">
-                        <div className="min-w-max pb-20">
-
-                            {/* Time Header */}
-                            <div className="sticky top-0 z-20 flex bg-white border-b border-slate-200 h-12 shadow-sm">
-                                <div className="w-40 sticky left-0 z-30 bg-white border-r border-slate-200 flex items-center justify-center font-bold text-slate-500 text-sm shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-                                    LOCATION
-                                </div>
-                                {hours.map(hour => (
-                                    <div key={hour} style={{ width: PIXELS_PER_HOUR }} className="flex-shrink-0 border-r border-slate-100 flex items-center justify-start px-2 text-xs text-slate-400 font-mono">
-                                        {format(setHours(new Date(), hour), 'h a')}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Rows */}
-                            <div className="relative">
-                                {/* Background Grid Lines */}
-                                <div className="absolute inset-0 flex pl-40 pointer-events-none z-0">
-                                    {hours.map(hour => (
-                                        <div key={hour} style={{ width: PIXELS_PER_HOUR }} className="border-r border-slate-200/60 h-full" />
-                                    ))}
-                                </div>
-
-                                {scheduleData.branches.map(location => (
-                                    <div key={location.id} className="flex h-32 border-b border-slate-200 relative group hover:bg-white transition-colors">
-                                        {/* Row Header */}
-                                        <div className="w-40 sticky left-0 z-10 bg-slate-50/90 border-r border-slate-200 flex flex-col justify-center px-4 backdrop-blur-sm group-hover:bg-white/95 transition-colors shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-                                            <span className="font-bold text-slate-700">{location.name}</span>
-                                            <span className="text-xs text-slate-400">Cap: {(location as any).capacity || '-'}</span>
-                                        </div>
-
-                                        {/* Interactive Grid & Sessions */}
-                                        <div className="flex-1 relative h-full">
-
-                                            {/* DROPPABLE ZONES LAYER */}
-                                            <div className="absolute inset-0 flex h-full">
-                                                {hours.map(hour => (
-                                                    <DroppableCell
-                                                        key={`${location.id}-${hour}`}
-                                                        id={`cell|${location.id}|${setHours(activeDay, hour).toISOString()}`}
-                                                        width={PIXELS_PER_HOUR}
-                                                    />
-                                                ))}
-                                            </div>
-
-                                            {/* SESSIONS LAYER */}
-                                            {daySessions
-                                                .filter(s => s.location_id === location.id)
-                                                .map(session => {
-                                                    const start = new Date(session.start_time);
-                                                    const end = new Date(session.end_time);
-
-                                                    // Calculate Position
-                                                    const startMin = start.getHours() * 60 + start.getMinutes();
-                                                    const dayStartMin = START_HOUR * 60;
-                                                    const offsetMinutes = startMin - dayStartMin;
-                                                    const durationMinutes = differenceInMinutes(end, start);
-
-                                                    const left = (offsetMinutes / 60) * PIXELS_PER_HOUR;
-                                                    const width = (durationMinutes / 60) * PIXELS_PER_HOUR;
-
-                                                    return (
-                                                        <SessionCapsule
-                                                            key={session.id}
-                                                            session={session}
-                                                            style={{
-                                                                position: 'absolute',
-                                                                left: `${left}px`,
-                                                                width: `${width - 4}px`, // Slight gap
-                                                                top: '8px',
-                                                                bottom: '8px',
-                                                                zIndex: 10
-                                                            }}
-                                                        />
-                                                    );
-                                                })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
                 </main>
             </div>
 
-            {/* Drag Overlay */}
+            {/* DRAG OVERLAY */}
             <DragOverlay>
                 {activeDragItem?.type === 'coach' ? (
-                    <div className="bg-white p-3 rounded-lg shadow-2xl border border-emerald-500 w-64 opacity-95 cursor-grabbing flex items-center gap-3 ring-4 ring-emerald-500/10">
-                        <img src={activeDragItem.coach.avatar_url} className="w-10 h-10 rounded-full" />
-                        <span className="font-bold text-slate-900">{activeDragItem.coach.full_name}</span>
+                    <div className="bg-white p-3 rounded-lg shadow-2xl border border-emerald-500 w-64 opacity-95 cursor-grabbing flex items-center gap-3 ring-4 ring-emerald-500/10 rotate-3 transform transition-transform">
+                        <UserAvatar profile={activeDragItem.coach} size="sm" />
+                        <div>
+                            <span className="font-bold text-slate-900 block">{activeDragItem.coach.first_name}</span>
+                            <span className="text-[10px] text-emerald-600 font-bold uppercase">Assigning...</span>
+                        </div>
                     </div>
                 ) : null}
             </DragOverlay>
@@ -372,19 +367,164 @@ export const SchedulerBoard = () => {
     );
 };
 
-// --- HELPER COMPONENTS ---
+// --- SUB-COMPONENTS ---
 
-const DroppableCell = ({ id, width }: { id: string, width: number }) => {
-    const { setNodeRef, isOver } = useDroppable({ id });
+interface DayColumnProps {
+    day: Date;
+    isToday: boolean;
+    sessions: Session[];
+    onDayClick: (date: Date) => void;
+    quickDraftTarget: Date | null;
+    onQuickCreate: (data: any) => Promise<void>;
+    onCloseQuickDraft: () => void;
+    locations: any[];
+}
+
+const DayColumn = ({
+    day,
+    isToday,
+    sessions,
+    onDayClick,
+    quickDraftTarget,
+    onQuickCreate,
+    onCloseQuickDraft,
+    locations
+}: DayColumnProps) => {
+
+    const isQuickDraftActive = quickDraftTarget && isSameDay(day, quickDraftTarget);
+
+    // Drop Zone for the main day (Assigned Shift)
+    const { setNodeRef: setDayRef, isOver: isOverDay } = useDroppable({
+        id: `day|${day.toISOString()}`,
+        data: { type: 'day', day }
+    });
+
+    // Drop Zone for Open Shifts
+    const { setNodeRef: setOpenRef, isOver: isOverOpen } = useDroppable({
+        id: `open|${day.toISOString()}`,
+        data: { type: 'open_header', day }
+    });
 
     return (
         <div
-            ref={setNodeRef}
-            style={{ width }}
+            ref={setDayRef}
+            // Add click handler to the background
+            onClick={(e) => {
+                // Prevent triggering when clicking inner elements
+                if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('clickable-area')) {
+                    onDayClick(day);
+                }
+            }}
             className={cn(
-                "h-full border-r border-transparent transition-colors",
-                isOver ? "bg-emerald-500/10 border-emerald-500/30" : "hover:bg-slate-50/50"
+                "flex-1 min-w-[220px] flex flex-col h-full transition-colors relative group border-r border-slate-200 outline-none",
+                isOverDay ? "bg-blue-50/30" : "bg-slate-50/30 hover:bg-slate-100/30",
+                isToday ? "bg-blue-50/10" : ""
             )}
-        />
+        >
+            {/* Header */}
+            <div className={cn(
+                "p-3 text-center border-b border-slate-200 sticky top-0 z-20 backdrop-blur-sm pointer-events-none", // pointer-events-none to pass click through if needed, but likely we wantheader to be safe
+                isToday ? "bg-blue-600 text-white shadow-md shadow-blue-900/10" : "bg-white/95"
+            )}>
+                <div className={cn("text-[10px] font-bold uppercase tracking-widest mb-0.5", isToday ? "text-blue-200" : "text-slate-400")}>
+                    {format(day, 'EEE')}
+                </div>
+                <div className={cn("text-2xl font-black leading-none", isToday ? "text-white" : "text-slate-800")}>
+                    {format(day, 'd')}
+                </div>
+            </div>
+
+            {/* Quick Action Overlay Hint (Only when hovering and not active) */}
+            <div className="absolute top-16 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <div className="bg-emerald-500 text-white p-1 rounded-full shadow-lg">
+                    <Plus className="w-4 h-4" />
+                </div>
+            </div>
+
+            {/* Open Shifts Header Zone */}
+            <div
+                ref={setOpenRef}
+                className={cn(
+                    "p-2 border-b border-dashed border-slate-300 transition-all flex flex-col items-center justify-center gap-1",
+                    isOverOpen
+                        ? "bg-emerald-100/80 h-24 border-emerald-400"
+                        : "bg-slate-100/50 hover:bg-slate-200/50 min-h-[40px]"
+                )}
+            >
+                <span className={cn(
+                    "text-[9px] font-bold uppercase tracking-widest text-center",
+                    isOverOpen ? "text-emerald-700" : "text-slate-400"
+                )}>
+                    {isOverOpen ? "Drop to Create Open Shift" : "Open Shifts"}
+                </span>
+            </div>
+
+            {/* Sessions Stack */}
+            <div className="flex-1 overflow-y-auto p-2 space-y-2 clickable-area cursor-pointer">
+
+                {/* Render Sessions */}
+                {sessions.map(session => (
+                    <SessionCapsule
+                        key={session.id}
+                        session={session}
+                    />
+                ))}
+
+                {/* GHOST CARD + POPOVER */}
+                {isQuickDraftActive && (
+                    <div className="relative animate-in fade-in zoom-in-95 duration-200">
+                        {/* THE VISUAL GHOST CARD */}
+                        <div className="rounded-xl p-3 mb-2 border-2 border-dashed border-emerald-400 bg-emerald-50/50 opacity-100 min-h-[90px] flex flex-col justify-between">
+                            <div className="flex justify-between items-start w-full mb-1">
+                                <span className="font-mono font-bold text-emerald-600 tracking-tighter text-[10px]">
+                                    09:00 - 13:00
+                                </span>
+                                <div className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold uppercase">
+                                    Planning...
+                                </div>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-sm leading-tight text-slate-900">New Shift</h4>
+                                <span className="text-[10px] uppercase tracking-wide text-slate-500">Select Details</span>
+                            </div>
+                            <div className="mt-1 flex items-center gap-2 rounded-lg px-2 py-1 bg-white/50 border border-emerald-100">
+                                <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center">
+                                    <span className="text-[10px] font-bold text-slate-500">?</span>
+                                </div>
+                                <span className="text-xs font-medium text-slate-500 italic">Unassigned</span>
+                            </div>
+                        </div>
+
+                        {/* THE POPOVER FORM */}
+                        <QuickCreatePopover
+                            date={day}
+                            onClose={onCloseQuickDraft}
+                            onCreate={onQuickCreate}
+                            onMoreOptions={() => {
+                                toast.info("Full modal coming soon!");
+                                onCloseQuickDraft();
+                            }}
+                            locations={locations}
+                        />
+                    </div>
+                )}
+
+                {/* Drop Hint for Day Column */}
+                {isOverDay && !isOverOpen && (
+                    <div className="h-24 rounded-xl border-2 border-dashed border-blue-300 bg-blue-50/50 flex items-center justify-center animate-pulse mt-2 transition-all">
+                        <span className="text-blue-600 text-xs font-bold">Drop to Assign to {format(day, 'EEEE')}</span>
+                    </div>
+                )}
+
+                {sessions.length === 0 && !isQuickDraftActive && !isOverDay && !isOverOpen && (
+                    <div className="h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 pointer-events-none">
+                        <div className="text-center">
+                            <div className="w-1 h-12 bg-slate-200 mx-auto rounded-full mb-2"></div>
+                            <span className="text-[10px] text-slate-300 font-medium uppercase tracking-widest">Free Day</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 };

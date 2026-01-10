@@ -131,9 +131,32 @@ const AcademySetup = () => {
             if (profileError) throw profileError;
             log("✅ Profile Linked & Setup Marked Complete.");
 
-            // D. Force Session Sync
-            // Syncs the new 'setup_completed' status to the global store
-            await useAuthStore.getState().checkSession();
+            if (profileError) throw profileError;
+            log("✅ Profile Linked & Setup Marked Complete.");
+
+            // D. Force Session Sync & Verify Academy ID
+            // We loop briefly to ensure the read-replica/cache has the new academy_id
+            let retries = 3;
+            let updatedUser = null;
+
+            while (retries > 0) {
+                log(`Syncing Session... (Attempts left: ${retries})`);
+                await useAuthStore.getState().checkSession();
+                updatedUser = useAuthStore.getState().user;
+
+                if (updatedUser?.academy_id) {
+                    log("✅ Synced! Academy ID found:", updatedUser.academy_id);
+                    break;
+                }
+
+                // Wait 500ms before retry
+                await new Promise(r => setTimeout(r, 500));
+                retries--;
+            }
+
+            if (!updatedUser?.academy_id) {
+                console.warn("⚠️ Warning: Session synced but Academy ID still missing in store. Redirecting anyway.");
+            }
 
             // E. Success Redirect
             window.location.href = '/owner/dashboard';

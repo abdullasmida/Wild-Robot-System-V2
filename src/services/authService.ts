@@ -20,25 +20,29 @@ export const authService = {
             return null;
         }
 
-        console.log('👤 AuthService: Session found, fetching profile...', session.user.id);
-
+        // Direct robust fetch with explicit Academy join
         try {
-            // Create a timeout promise
-            const timeout = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Profile fetch timed out')), 5000)
-            );
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*, academy:academies(id, name, logo_url)')
+                .eq('id', session.user.id)
+                .single();
 
-            // Race query against timeout to prevent endless hanging
-            const profile = await Promise.race([
-                profileService.getProfileWithAcademy(session.user.id),
-                timeout
-            ]) as ProfileWithAcademy;
+            if (error) {
+                console.error('❌ AuthService: Profile Fetch Error', error);
+                return null;
+            }
 
-            console.log('✅ AuthService: Profile loaded', profile);
-            return profile;
-        } catch (error) {
-            console.error('❌ AuthService: Error fetching user profile:', error);
-            // If profile missing or DB error, return null to force logout/redirect instead of hanging
+            console.log('🔐 AuthService: Fetched Profile:', {
+                id: data.id,
+                role: data.role,
+                academy: data.academy,
+                academy_id: data.academy_id
+            });
+
+            return data as ProfileWithAcademy;
+        } catch (err) {
+            console.error('❌ AuthService: Unexpected Error', err);
             return null;
         }
     },

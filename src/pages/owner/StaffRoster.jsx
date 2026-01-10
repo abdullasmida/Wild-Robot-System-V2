@@ -168,15 +168,8 @@ const StaffRoster = () => {
             <UniversalAddModal
                 isOpen={isAddModalOpen}
                 onClose={() => setAddModalOpen(false)}
-                // Assuming UniversalAddModal has an update trigger or we rely on onClose.
-                // If it doesn't support onSuccess, we might miss the update.
-                // Let's pass onSuccess just in case it was implemented in a previous turn 
-                // or we need to implement it.
-                // The user's prompt implies we just need to refactor this file.
-                // I'll add handleSuccess to onClose for now as a poor man's refresh, 
-                // OR better, pass it as a new prop and hope.
-                // Safest: When modal closes, we assume something might have happened, so we fetch.
                 onSuccess={handleSuccess}
+                academyId={user?.academy_id} // Pass Academy ID to prevent error
             />
         </div>
     );
