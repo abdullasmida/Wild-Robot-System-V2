@@ -17,7 +17,9 @@ import {
     Crown,
     ShieldCheck,
     PanelLeftClose,
-    PanelLeftOpen
+    PanelLeftOpen,
+    BookOpen,
+    Dumbbell
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -63,6 +65,8 @@ const CommandLayout = () => {
     const sidebarItems = [
         { label: 'Command Center', icon: LayoutDashboard, path: '/command/dashboard' },
         { label: 'Master Schedule', icon: CalendarDays, path: '/command/schedule' },
+        { label: 'Academic Calendar', icon: BookOpen, path: '/command/calendar' },
+        { label: 'Skill Library', icon: Dumbbell, path: '/command/training' },
         { label: 'Live Operations', icon: Activity, path: '/command/feed' },
         { label: 'Team Directory', icon: Contact, path: '/command/staff' },
         { label: 'Heroes Roster', icon: Trophy, path: '/command/athletes' },

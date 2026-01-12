@@ -97,7 +97,7 @@ const AthletesRoster = () => {
             ) : athletes.length === 0 ? (
                 <EmptyState
                     icon={Trophy}
-                    title="No Heroes Founded"
+                    title="No Heroes Found"
                     description="Your roster is empty. Recruit your first athlete to start the journey."
                     actionLabel="Recruit First Hero"
                     onAction={() => setIsSheetOpen(true)}

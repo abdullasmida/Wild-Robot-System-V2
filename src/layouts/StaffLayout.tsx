@@ -11,6 +11,7 @@ import {
     LogOut,
     Shield,
     ChevronRight,
+    Dumbbell,
     PanelLeftClose,
     PanelLeftOpen
 } from 'lucide-react';
@@ -37,6 +38,7 @@ const StaffLayout = () => {
     const sidebarItems = [
         { label: 'My Desk', icon: LayoutDashboard, path: '/staff/dashboard' },
         { label: 'My Schedule', icon: CalendarDays, path: '/staff/schedule' },
+        { label: 'Skill Library', icon: Dumbbell, path: '/staff/training' },
         { label: 'Team Chat', icon: MessageSquare, path: '/staff/chat' },
         { label: 'My Profile', icon: User, path: '/staff/profile' },
     ];
@@ -100,8 +102,13 @@ const StaffLayout = () => {
                     })}
                 </nav>
 
-                <div className={cn("p-4 border-t border-slate-100 bg-slate-50/30 text-xs text-slate-400 text-center font-medium transition-all", isSidebarCollapsed && "opacity-0")}>
-                    <span className="whitespace-nowrap">Wild Robot OS</span>
+                <div className={cn("p-4 border-t border-slate-100 bg-slate-50/30 flex flex-col items-center justify-center text-center transition-all", isSidebarCollapsed && "opacity-0")}>
+                    <span className="text-xs font-bold text-slate-500 whitespace-nowrap">
+                        Powered by
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 mt-0.5 whitespace-nowrap uppercase tracking-wider">
+                        {academy?.name || 'Wild Robot'}
+                    </span>
                 </div>
             </aside>
 

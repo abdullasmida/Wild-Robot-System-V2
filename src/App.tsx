@@ -24,6 +24,8 @@ import AthletesRoster from './pages/owner/AthletesRoster';
 import SchedulePage from './pages/SchedulePage';
 import OwnerProfile from './pages/owner/OwnerProfile';
 import FinanceDashboard from './pages/owner/FinanceDashboard.jsx';
+import HQSettings from './pages/owner/HQSettings';
+import AcademicCalendar from './pages/command/AcademicCalendar';
 
 // Athlete Pages
 import AthleteHome from './pages/Athlete/AthleteHome';
@@ -37,6 +39,10 @@ import WorkspaceDashboard from './pages/workspace/WorkspaceDashboard';
 // Coach Pages (Specific routes used in Workspace or Onboarding)
 import CoachSchedule from './pages/coach/CoachSchedule';
 import CoachOnboarding from './pages/onboarding/CoachOnboarding';
+
+// Training
+import SkillLibrary from './pages/training/SkillLibrary';
+import PlanBuilder from './pages/training/PlanBuilder';
 
 // Lazy Loading
 const AthleteBilling = React.lazy(() => import('./pages/Athlete/Billing'));
@@ -150,7 +156,10 @@ function App() {
                         <Route path="staff" element={<StaffRoster />} />
                         <Route path="athletes" element={<AthletesRoster />} />
                         <Route path="finance" element={<FinanceDashboard />} />
-                        <Route path="settings" element={<ComingSoon title="HQ Settings" />} />
+                        <Route path="calendar" element={<AcademicCalendar />} />
+                        <Route path="training" element={<SkillLibrary />} />
+                        <Route path="training/builder" element={<PlanBuilder />} />
+                        <Route path="settings" element={<HQSettings />} />
                     </Route>
 
                     {/* -----------------------------------------------------------------
@@ -169,6 +178,7 @@ function App() {
                             Ideally we should have StaffDashboard. For now re-use. */}
                         <Route path="dashboard" element={<WorkspaceDashboard />} />
                         <Route path="schedule" element={<CoachSchedule />} /> {/* Staff see CoachSchedule */}
+                        <Route path="training" element={<SkillLibrary />} />
                         <Route path="chat" element={<ComingSoon title="Team Chat" />} />
                         <Route path="profile" element={<OwnerProfile />} /> {/* Re-use profile for now */}
                     </Route>

@@ -18,6 +18,8 @@ export interface Session extends Database['public']['Tables']['sessions']['Row']
     title?: string;
     capacity?: number;
     is_open_for_claim?: boolean;
+    start_time: string;
+    end_time: string;
 
     // Relations
     locations?: {
@@ -87,5 +89,80 @@ export interface PlayerEvaluation {
     status: SkillStatus;
     stars: number;
     coach_id?: string;
-    updated_at: string;
+}
+
+// --- Academic Calendar Types ---
+
+export interface Program {
+    id: string;
+    academy_id: string;
+    name: string;
+    color: string;
+    age_group?: string;
+    description?: string;
+    tags?: string[];
+}
+
+export interface Batch {
+    id: string;
+    program_id: string;
+    academy_id: string;
+    location_id?: string;
+    lead_coach_id?: string;
+    name: string;
+    schedule_rules: {
+        days: number[];
+        startTime: string;
+        durationMinutes: number;
+    };
+    capacity: number;
+    min_capacity_for_profit: number;
+    price: number;
+    status: 'active' | 'archived';
+    start_date?: string;
+    end_date?: string;
+
+    // Relations
+    program?: Program;
+    location?: { name: string };
+    lead_coach?: Profile;
+}
+
+export interface ClassSession {
+    id: string;
+    batch_id: string;
+    academy_id: string;
+    date: string; // YYYY-MM-DD
+    start_time: string; // ISO
+    end_time: string; // ISO
+    coach_id?: string;
+    status: 'scheduled' | 'cancelled' | 'completed';
+    topic?: string;
+
+    // Relations
+    batch?: Batch;
+    coach?: Profile;
+    // Helper for UI (fetched via count or view)
+    enrollment_count?: number;
+}
+
+export interface Enrollment {
+    id: string;
+    batch_id: string;
+    athlete_id: string;
+    status: 'active' | 'trial' | 'waitlist';
+    start_date: string;
+
+    // Relations
+    athlete?: Profile;
+    batch?: Batch;
+}
+
+export interface AttendanceRecord {
+    id: string;
+    class_session_id: string;
+    student_id: string;
+    status: 'present' | 'absent' | 'late' | 'excused';
+    is_makeup: boolean;
+    notes?: string;
 }

@@ -50,15 +50,32 @@ export const SchedulerBoard = () => {
     const [quickDraft, setQuickDraft] = useState<{ date: Date | null }>({ date: null });
 
     // Auth & Init
+    const [academyConfig, setAcademyConfig] = useState<{ enableOpenShifts: boolean }>({ enableOpenShifts: false });
+
     useEffect(() => {
         const init = async () => {
             const { data: { user } } = await supabase.auth.getUser();
+            let academyId = null;
+
             if (user?.user_metadata?.academy_id) {
-                const { data: profile } = await supabase.from('profiles').select('academy_id').eq('id', user.id).single();
-                if (profile) setUserAcademyId(profile.academy_id);
+                academyId = user.user_metadata.academy_id;
             } else {
                 const { data: profile } = await supabase.from('profiles').select('academy_id').eq('id', user?.id).single();
-                if (profile) setUserAcademyId(profile.academy_id);
+                academyId = profile?.academy_id;
+            }
+
+            if (academyId) {
+                setUserAcademyId(academyId);
+                // Fetch Academy Config
+                const { data: academy } = await supabase
+                    .from('academies')
+                    .select('config_enable_open_shifts')
+                    .eq('id', academyId)
+                    .single();
+
+                if (academy) {
+                    setAcademyConfig({ enableOpenShifts: academy.config_enable_open_shifts || false });
+                }
             }
         };
         init();
@@ -206,7 +223,7 @@ export const SchedulerBoard = () => {
             }
 
             // CASE C: Dropped on "Open Shifts" Header -> CREATE OPEN SHIFT
-            else if (String(over.id).startsWith('open|')) {
+            else if (String(over.id).startsWith('open|') && academyConfig.enableOpenShifts) {
                 const dateStr = String(over.id).split('|')[1];
                 const targetDate = new Date(dateStr);
                 // We can potentially trigger the new Quick Create Popover here too if we wanted!
@@ -338,11 +355,13 @@ export const SchedulerBoard = () => {
                                     day={day}
                                     isToday={isToday(day)}
                                     sessions={getSessionsForDay(day)}
-                                    onDayClick={(d) => setQuickDraft({ date: d })}
+                                    // Only allow Quick Draft if Open Shifts are enabled
+                                    onDayClick={(d) => academyConfig.enableOpenShifts && setQuickDraft({ date: d })}
                                     quickDraftTarget={quickDraft.date}
                                     onQuickCreate={handleQuickCreateSubmit}
                                     onCloseQuickDraft={() => setQuickDraft({ date: null })}
                                     locations={scheduleData.branches}
+                                    enableOpenShifts={academyConfig.enableOpenShifts}
                                 />
                             ))}
                         </div>
@@ -378,6 +397,7 @@ interface DayColumnProps {
     onQuickCreate: (data: any) => Promise<void>;
     onCloseQuickDraft: () => void;
     locations: any[];
+    enableOpenShifts: boolean;
 }
 
 const DayColumn = ({
@@ -388,7 +408,8 @@ const DayColumn = ({
     quickDraftTarget,
     onQuickCreate,
     onCloseQuickDraft,
-    locations
+    locations,
+    enableOpenShifts
 }: DayColumnProps) => {
 
     const isQuickDraftActive = quickDraftTarget && isSameDay(day, quickDraftTarget);
@@ -399,10 +420,11 @@ const DayColumn = ({
         data: { type: 'day', day }
     });
 
-    // Drop Zone for Open Shifts
+    // Drop Zone for Open Shifts - Conditionally Rendered
     const { setNodeRef: setOpenRef, isOver: isOverOpen } = useDroppable({
         id: `open|${day.toISOString()}`,
-        data: { type: 'open_header', day }
+        data: { type: 'open_header', day },
+        disabled: !enableOpenShifts
     });
 
     return (
@@ -435,29 +457,33 @@ const DayColumn = ({
             </div>
 
             {/* Quick Action Overlay Hint (Only when hovering and not active) */}
-            <div className="absolute top-16 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                <div className="bg-emerald-500 text-white p-1 rounded-full shadow-lg">
-                    <Plus className="w-4 h-4" />
+            {enableOpenShifts && (
+                <div className="absolute top-16 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <div className="bg-emerald-500 text-white p-1 rounded-full shadow-lg">
+                        <Plus className="w-4 h-4" />
+                    </div>
                 </div>
-            </div>
+            )}
 
-            {/* Open Shifts Header Zone */}
-            <div
-                ref={setOpenRef}
-                className={cn(
-                    "p-2 border-b border-dashed border-slate-300 transition-all flex flex-col items-center justify-center gap-1",
-                    isOverOpen
-                        ? "bg-emerald-100/80 h-24 border-emerald-400"
-                        : "bg-slate-100/50 hover:bg-slate-200/50 min-h-[40px]"
-                )}
-            >
-                <span className={cn(
-                    "text-[9px] font-bold uppercase tracking-widest text-center",
-                    isOverOpen ? "text-emerald-700" : "text-slate-400"
-                )}>
-                    {isOverOpen ? "Drop to Create Open Shift" : "Open Shifts"}
-                </span>
-            </div>
+            {/* Open Shifts Header Zone - CONDITIONAL */}
+            {enableOpenShifts && (
+                <div
+                    ref={setOpenRef}
+                    className={cn(
+                        "p-2 border-b border-dashed border-slate-300 transition-all flex flex-col items-center justify-center gap-1",
+                        isOverOpen
+                            ? "bg-emerald-100/80 h-24 border-emerald-400"
+                            : "bg-slate-100/50 hover:bg-slate-200/50 min-h-[40px]"
+                    )}
+                >
+                    <span className={cn(
+                        "text-[9px] font-bold uppercase tracking-widest text-center",
+                        isOverOpen ? "text-emerald-700" : "text-slate-400"
+                    )}>
+                        {isOverOpen ? "Drop to Create Open Shift" : "Open Shifts"}
+                    </span>
+                </div>
+            )}
 
             {/* Sessions Stack */}
             <div className="flex-1 overflow-y-auto p-2 space-y-2 clickable-area cursor-pointer">
@@ -471,7 +497,7 @@ const DayColumn = ({
                 ))}
 
                 {/* GHOST CARD + POPOVER */}
-                {isQuickDraftActive && (
+                {isQuickDraftActive && enableOpenShifts && (
                     <div className="relative animate-in fade-in zoom-in-95 duration-200">
                         {/* THE VISUAL GHOST CARD */}
                         <div className="rounded-xl p-3 mb-2 border-2 border-dashed border-emerald-400 bg-emerald-50/50 opacity-100 min-h-[90px] flex flex-col justify-between">

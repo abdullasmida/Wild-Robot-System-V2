@@ -10,7 +10,8 @@ import {
     isToday,
     startOfDay,
     endOfDay,
-    isBefore
+    isBefore,
+    areIntervalsOverlapping
 } from 'date-fns';
 import {
     ChevronLeft,
@@ -21,7 +22,9 @@ import {
     Briefcase,
     Calendar,
     Users,
-    MoreHorizontal
+    MoreHorizontal,
+    RefreshCw,
+    AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ShiftDetailsDrawer from '@/components/scheduler/ShiftDetailsDrawer';
@@ -33,16 +36,26 @@ const CoachSchedule = () => {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewDate, setViewDate] = useState(new Date());
+    const [enableOpenShifts, setEnableOpenShifts] = useState(false);
 
     // Drawer State
     const [selectedSession, setSelectedSession] = useState<Session | null>(null);
     const [isDrawerOpen, setDrawerOpen] = useState(false);
 
     // Fetch Data
-    const fetchSchedule = async () => {
+    const fetchSchedule = async (isManual = false) => {
         if (!profile?.academy_id) return;
         setLoading(true);
+        if (isManual) toast.info("Syncing schedule...");
         try {
+            // 1. Fetch Config
+            const { data: academy } = await supabase
+                .from('academies')
+                .select('config_enable_open_shifts')
+                .eq('id', profile.academy_id)
+                .single();
+            setEnableOpenShifts(academy?.config_enable_open_shifts || false);
+
             // Calculate Week Range
             const start = startOfWeek(viewDate, { weekStartsOn: 1 }).toISOString();
             const end = addDays(startOfWeek(viewDate, { weekStartsOn: 1 }), 7).toISOString();
@@ -73,6 +86,7 @@ const CoachSchedule = () => {
             }
             // Cast to strictly typed Session array
             setSessions((data as any[]) || []);
+            if (isManual) toast.success("Schedule Updated");
         } catch (err: any) {
             console.error("Error loading schedule:", err);
             toast.error("Failed to load schedule");
@@ -98,6 +112,7 @@ const CoachSchedule = () => {
     };
 
     const getOpenShifts = (day: Date) => {
+        if (!enableOpenShifts) return [];
         return sessions.filter(s =>
             isSameDay(parseISO(s.start_time), day) &&
             s.is_open_for_claim === true &&
@@ -108,6 +123,18 @@ const CoachSchedule = () => {
     const openDrawer = (session: Session) => {
         setSelectedSession(session);
         setDrawerOpen(true);
+    };
+
+    // Conflict Checker
+    const checkConflict = (targetSession: Session, myShiftsForDay: Session[]) => {
+        const tStart = parseISO(targetSession.start_time);
+        const tEnd = parseISO(targetSession.end_time);
+
+        return myShiftsForDay.some(myShift => {
+            const mStart = parseISO(myShift.start_time);
+            const mEnd = parseISO(myShift.end_time);
+            return areIntervalsOverlapping({ start: tStart, end: tEnd }, { start: mStart, end: mEnd });
+        });
     };
 
     return (
@@ -129,15 +156,23 @@ const CoachSchedule = () => {
                     </div>
                 </div>
 
-                <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-                    <button onClick={() => setViewDate(addDays(viewDate, -7))} className="p-2 hover:bg-white rounded-md shadow-sm transition-all text-slate-500 hover:text-slate-800"><ChevronLeft className="w-5 h-5" /></button>
-                    <button onClick={() => setViewDate(new Date())} className="px-4 text-xs font-bold hover:bg-white rounded-md transition-all text-slate-600 hover:text-slate-900">Today</button>
-                    <button onClick={() => setViewDate(addDays(viewDate, 7))} className="p-2 hover:bg-white rounded-md shadow-sm transition-all text-slate-500 hover:text-slate-800"><ChevronRight className="w-5 h-5" /></button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => fetchSchedule(true)}
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Refresh Schedule"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                    <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                        <button onClick={() => setViewDate(addDays(viewDate, -7))} className="p-2 hover:bg-white rounded-md shadow-sm transition-all text-slate-500 hover:text-slate-800"><ChevronLeft className="w-5 h-5" /></button>
+                        <button onClick={() => setViewDate(new Date())} className="px-4 text-xs font-bold hover:bg-white rounded-md transition-all text-slate-600 hover:text-slate-900">Today</button>
+                        <button onClick={() => setViewDate(addDays(viewDate, 7))} className="p-2 hover:bg-white rounded-md shadow-sm transition-all text-slate-500 hover:text-slate-800"><ChevronRight className="w-5 h-5" /></button>
+                    </div>
                 </div>
             </div>
 
             {/* --- MOBILE VIEW (< md) --- */}
-            {/* Same as before but polished */}
             <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-6">
                 {weekDays.map((day) => {
                     const myShifts = getMyShifts(day);
@@ -158,9 +193,18 @@ const CoachSchedule = () => {
 
                             <div className="space-y-3">
                                 {/* OPEN SHIFTS */}
-                                {openShifts.map(session => (
-                                    <ShiftCardMobile key={session.id} session={session} onClick={() => openDrawer(session)} type="open" />
-                                ))}
+                                {openShifts.map(session => {
+                                    const hasConflict = checkConflict(session, myShifts);
+                                    return (
+                                        <ShiftCardMobile
+                                            key={session.id}
+                                            session={session}
+                                            onClick={() => openDrawer(session)}
+                                            type="open"
+                                            hasConflict={hasConflict}
+                                        />
+                                    );
+                                })}
                                 {/* MY SHIFTS */}
                                 {myShifts.map(session => (
                                     <ShiftCardMobile key={session.id} session={session} onClick={() => openDrawer(session)} type="assigned" />
@@ -199,9 +243,18 @@ const CoachSchedule = () => {
                                     {openShifts.length > 0 && (
                                         <div className="bg-emerald-50/50 rounded-lg p-1.5 border border-emerald-100/50 space-y-2 mb-2">
                                             <div className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider text-center py-1">Open Shifts</div>
-                                            {openShifts.map(session => (
-                                                <ShiftCard key={session.id} session={session} onClick={() => openDrawer(session)} type="open" />
-                                            ))}
+                                            {openShifts.map(session => {
+                                                const hasConflict = checkConflict(session, myShifts);
+                                                return (
+                                                    <ShiftCard
+                                                        key={session.id}
+                                                        session={session}
+                                                        onClick={() => openDrawer(session)}
+                                                        type="open"
+                                                        hasConflict={hasConflict}
+                                                    />
+                                                );
+                                            })}
                                         </div>
                                     )}
 
@@ -225,40 +278,37 @@ const CoachSchedule = () => {
                 isOpen={isDrawerOpen}
                 onClose={() => setDrawerOpen(false)}
                 session={selectedSession}
-                onActionComplete={fetchSchedule}
+                onActionComplete={() => fetchSchedule(false)}
             />
-
-            {/* DEBUGGING AID (Temporary) - Remove after fixing */}
-            <div className="p-4 bg-slate-900 text-slate-400 text-xs font-mono m-4 rounded-lg overflow-auto max-h-64">
-                <p className="font-bold text-white mb-2">🔍 DEBUGGER</p>
-                <p>User ID: {user?.id}</p>
-                <p>Academy ID: {profile?.academy_id}</p>
-                <p>Raw Sessions Fetched: {sessions.length}</p>
-                {sessions.length > 0 && (
-                    <div className="mt-2 border-t border-slate-700 pt-2">
-                        <p>First Session Sample:</p>
-                        <p>ID: {sessions[0].id}</p>
-                        <p>Is Published: {String(sessions[0].is_published)}</p>
-                        <p>Assignments Count: {sessions[0].assignments?.length}</p>
-                        {sessions[0].assignments?.length ? (
-                            <p>Assigned Staff ID: {sessions[0].assignments[0].staff_id}</p>
-                        ) : <p>No Assignments</p>}
-                    </div>
-                )}
-            </div>
         </div>
     );
 };
 
 // --- SUB-COMPONENTS ---
 
-const ShiftCard = ({ session, onClick, type }: { session: Session, onClick: () => void, type: 'open' | 'assigned' }) => {
+const ShiftCard = ({
+    session,
+    onClick,
+    type,
+    hasConflict = false
+}: {
+    session: Session,
+    onClick: () => void,
+    type: 'open' | 'assigned',
+    hasConflict?: boolean
+}) => {
     const startTime = parseISO(session.start_time);
     const endTime = parseISO(session.end_time);
 
     // Dynamic border color
     const borderColor = type === 'open' ? '#10b981' : (session.locations?.color || '#3b82f6');
+    // Open shifts get emerald-50 background, assigned get white
     const bgColor = type === 'open' ? 'bg-white' : 'bg-white';
+
+    // Assignment count
+    const assignedCount = session.assignments?.length || 0;
+    const capacity = session.capacity || 1;
+    const isFull = assignedCount >= capacity;
 
     return (
         <div
@@ -294,30 +344,68 @@ const ShiftCard = ({ session, onClick, type }: { session: Session, onClick: () =
                     </div>
                 </div>
 
-                {/* Footer: Crew Avatars */}
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
-                        {type === 'open' ? 'Claim' : 'Crew'}
-                    </span>
-                    <div className="flex -space-x-1.5">
-                        {session.assignments?.slice(0, 3).map((a: any) => (
-                            <div key={a.id} className="w-5 h-5 rounded-full ring-1 ring-white bg-slate-100 flex items-center justify-center overflow-hidden">
-                                <UserAvatar user={a.staff} className="w-full h-full text-[8px]" />
-                            </div>
-                        ))}
-                        {(session.assignments?.length || 0) > 3 && (
-                            <div className="w-5 h-5 rounded-full ring-1 ring-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-500">
-                                +
-                            </div>
+                {/* Footer: Claim Button (Open Shifts) VS Crew List (Assigned) */}
+
+                {type === 'open' ? (
+                    <button
+                        className={`
+                            w-full mt-2 py-1 text-xs font-bold rounded shadow-sm transition
+                            flex items-center justify-center gap-1
+                            ${hasConflict
+                                ? 'bg-rose-100 text-rose-600 cursor-not-allowed'
+                                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                            }
+                        `}
+                        disabled={hasConflict}
+                    >
+                        {hasConflict ? (
+                            <>
+                                <AlertTriangle className="w-3 h-3" /> Conflict
+                            </>
+                        ) : (
+                            <>
+                                {isFull ? 'Waitlist' : 'Claim Shift'}
+                            </>
                         )}
-                    </div>
-                </div>
+                    </button>
+                ) : (
+                    // Assigned Shifts Footer
+                    assignedCount > 0 && (
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
+                                Crew
+                            </span>
+                            <div className="flex -space-x-1.5">
+                                {session.assignments?.slice(0, 3).map((a: any) => (
+                                    <div key={a.id} className="w-5 h-5 rounded-full ring-1 ring-white bg-slate-100 flex items-center justify-center overflow-hidden">
+                                        <UserAvatar user={a.staff} className="w-full h-full text-[8px]" />
+                                    </div>
+                                ))}
+                                {assignedCount > 3 && (
+                                    <div className="w-5 h-5 rounded-full ring-1 ring-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-500">
+                                        +{assignedCount - 3}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )
+                )}
             </div>
         </div>
     );
 }
 
-const ShiftCardMobile = ({ session, onClick, type }: { session: Session, onClick: () => void, type: 'open' | 'assigned' }) => {
+const ShiftCardMobile = ({
+    session,
+    onClick,
+    type,
+    hasConflict = false
+}: {
+    session: Session,
+    onClick: () => void,
+    type: 'open' | 'assigned',
+    hasConflict?: boolean
+}) => {
     const startTime = parseISO(session.start_time);
     const endTime = parseISO(session.end_time);
     const borderColor = type === 'open' ? '#10b981' : (session.locations?.color || '#3b82f6');
@@ -331,12 +419,24 @@ const ShiftCardMobile = ({ session, onClick, type }: { session: Session, onClick
             <div className="p-3 flex-1">
                 <div className="flex justify-between items-start mb-1">
                     <h3 className="font-bold text-slate-900">{session.title || session.job_type}</h3>
-                    {type === 'open' && <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 rounded">OPEN</span>}
+                    {type === 'open' && (
+                        hasConflict ? (
+                            <span className="text-[10px] font-bold bg-rose-100 text-rose-700 px-1.5 rounded flex items-center gap-1">Conflict</span>
+                        ) : (
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 rounded">OPEN</span>
+                        )
+                    )}
                 </div>
-                <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                <div className="flex flex-wrap gap-3 text-xs text-slate-500 mb-2">
                     <span className="flex items-center gap-1 font-mono"><Clock className="w-3.5 h-3.5" /> {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}</span>
                     <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {session.locations?.name || 'Remote'}</span>
                 </div>
+
+                {type === 'open' && !hasConflict && (
+                    <div className="mt-2 text-center text-xs font-bold text-emerald-600 bg-emerald-50 py-1 rounded">
+                        Tap to Claim
+                    </div>
+                )}
             </div>
         </div>
     )

@@ -20,6 +20,10 @@ const AuthGuard = ({ children, requiredZone = 'any', allowSetup = false }) => {
     // Logic extraction for re-use
     const checkAuthorization = useCallback(async () => {
         try {
+            // Optimistic: If we are already authorized, don't block UI with loading state during re-check
+            // Unless we suspect a zone change that requires blocking?
+            // For now, allow background check if `isAuthorized` is true.
+
             const { data: { session } } = await supabase.auth.getSession();
 
             // 1. Authentication Check
@@ -129,7 +133,9 @@ const AuthGuard = ({ children, requiredZone = 'any', allowSetup = false }) => {
         checkAuthorization();
     }, [checkAuthorization]);
 
-    if (loading) {
+    // UI IMPROVEMENT: Only show full screen loader if we are NOT yet authorized.
+    // If we are authorized (e.g. from previous route), keep showing children while re-verifying in background.
+    if (loading && !isAuthorized) {
         // Theme-aware Loader
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950">
