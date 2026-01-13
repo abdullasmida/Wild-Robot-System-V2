@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BookOpen, Search, Filter, Plus, Dumbbell, ClipboardList } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { BookOpen, Search, Plus, Dumbbell, ClipboardList } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import SkillCard from '../../components/cards/SkillCard';
+import AddSkillModal from '../../components/modals/AddSkillModal';
 // import { Skill } from '../../types/training';
 
 const SkillLibrary = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [skills, setSkills] = useState<any[]>([]); // Using any[] for now to speed up dev
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedApparatus, setSelectedApparatus] = useState<string | null>(null);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     useEffect(() => {
         fetchSkills();
@@ -46,8 +49,21 @@ const SkillLibrary = () => {
         }
     };
 
+    const handleCreatePlan = () => {
+        if (location.pathname.startsWith('/staff')) {
+            navigate('/staff/training/builder');
+        } else {
+            navigate('/command/training/builder');
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto space-y-8 animate-fade-in-up p-6">
+            <AddSkillModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onSkillAdded={fetchSkills}
+            />
 
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -72,12 +88,15 @@ const SkillLibrary = () => {
                         />
                     </div>
                     <button
-                        onClick={() => navigate('/command/training/builder')}
+                        onClick={handleCreatePlan}
                         className="bg-white text-slate-700 border border-slate-200 px-4 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 transition active:scale-95"
                     >
                         <ClipboardList className="w-5 h-5" /> Create Plan
                     </button>
-                    <button className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-800 transition active:scale-95 shadow-xl shadow-slate-900/20">
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-800 transition active:scale-95 shadow-xl shadow-slate-900/20"
+                    >
                         <Plus className="w-5 h-5" /> New Skill
                     </button>
                 </div>

@@ -144,7 +144,7 @@ function App() {
                     <Route
                         path="/command"
                         element={
-                            <AuthGuard requiredZone="staff">
+                            <AuthGuard requiredZone="command">
                                 <CommandLayout />
                             </AuthGuard>
                         }
@@ -178,7 +178,9 @@ function App() {
                             Ideally we should have StaffDashboard. For now re-use. */}
                         <Route path="dashboard" element={<WorkspaceDashboard />} />
                         <Route path="schedule" element={<CoachSchedule />} /> {/* Staff see CoachSchedule */}
+                        <Route path="calendar" element={<AcademicCalendar />} />
                         <Route path="training" element={<SkillLibrary />} />
+                        <Route path="training/builder" element={<PlanBuilder />} />
                         <Route path="chat" element={<ComingSoon title="Team Chat" />} />
                         <Route path="profile" element={<OwnerProfile />} /> {/* Re-use profile for now */}
                     </Route>

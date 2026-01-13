@@ -59,7 +59,23 @@ const AuthGuard = ({ children, requiredZone = 'any', allowSetup = false }) => {
             const isAthlete = !isStaff; // Simplification, assuming valid roles
 
             // 3. Zone Enforcement (The Traffic Cop)
-            if (requiredZone === 'staff') {
+            if (requiredZone === 'command') {
+                const COMMAND_ROLES = ['owner', 'admin', 'manager'];
+                const isCommandRole = COMMAND_ROLES.includes(userRole);
+
+                if (!isCommandRole) {
+                    // If they are staff but not command level, send to staff dashboard
+                    if (isStaff) {
+                        console.warn(`AuthGuard: Staff (${userRole}) attempted to breach Command Zone. Redirecting to Staff Dashboard...`);
+                        navigate('/staff/dashboard', { replace: true });
+                        return;
+                    } else {
+                        // If not staff at all (e.g. athlete), standard block
+                        navigate('/login'); // Or home
+                        return;
+                    }
+                }
+            } else if (requiredZone === 'staff') {
                 if (!isStaff) {
                     console.warn(`AuthGuard: Athlete (${userRole}) attempted to breach Staff Zone. Redirecting...`);
                     navigate('/athlete', { replace: true });

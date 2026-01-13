@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
     CalendarDays,
+    BookOpen,
     MessageSquare,
     User,
     Settings,
@@ -38,6 +39,7 @@ const StaffLayout = () => {
     const sidebarItems = [
         { label: 'My Desk', icon: LayoutDashboard, path: '/staff/dashboard' },
         { label: 'My Schedule', icon: CalendarDays, path: '/staff/schedule' },
+        { label: 'Academic Calendar', icon: BookOpen, path: '/staff/calendar' },
         { label: 'Skill Library', icon: Dumbbell, path: '/staff/training' },
         { label: 'Team Chat', icon: MessageSquare, path: '/staff/chat' },
         { label: 'My Profile', icon: User, path: '/staff/profile' },

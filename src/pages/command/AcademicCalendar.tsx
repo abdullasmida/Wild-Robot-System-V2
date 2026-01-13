@@ -189,13 +189,15 @@ export default function AcademicCalendar() {
                             </span>
                             <button onClick={() => setViewDate(addWeeks(viewDate, 1))} className="p-1 hover:bg-white rounded-md shadow-sm transition-all text-slate-600"><ChevronRight className="w-4 h-4" /></button>
                         </div>
-                        <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold text-sm shadow-md shadow-indigo-200 transition-all active:scale-95"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Create Batch
-                        </button>
+                        {['owner', 'admin', 'manager'].includes(profile?.role || '') && (
+                            <button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold text-sm shadow-md shadow-indigo-200 transition-all active:scale-95"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Create Batch
+                            </button>
+                        )}
                     </div>
                 </div>
 
