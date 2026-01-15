@@ -1,10 +1,14 @@
 import React from 'react';
 import { useUser } from '@/context/UserContext';
+import { useCurrentSession } from '@/hooks/useCurrentSession';
 import { Link } from 'react-router-dom';
 import { CalendarDays, Users, Trophy, ArrowRight, Activity, ClipboardList } from 'lucide-react';
 
 const CoachDashboard = () => {
-    const { profile, loading } = useUser();
+    const { profile, academy, loading: userLoading } = useUser();
+    const { activeSession, upcomingSession, loading: sessionLoading } = useCurrentSession();
+
+    const loading = userLoading || sessionLoading;
 
     if (loading) {
         return (
@@ -14,27 +18,97 @@ const CoachDashboard = () => {
         );
     }
 
+    // Default Brand Color
+    const brandColor = academy?.brand_color || '#10b981';
+
     return (
         <div className="max-w-5xl mx-auto space-y-6">
-            {/* 1. Compact Hero Section */}
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-6 text-white shadow-lg shadow-emerald-900/10 relative overflow-hidden flex items-center justify-between min-h-[160px]">
-                {/* Background Decor */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
-                <div className="relative z-10 max-w-xl">
-                    <h1 className="text-2xl font-bold mb-1">Hello, {profile?.first_name || 'Coach'} 👋</h1>
-                    <p className="text-emerald-50 text-sm font-medium opacity-90 leading-relaxed">
-                        Ready to inspire? You have upcoming sessions today.
-                        Check your roster for any medical alerts before starting.
-                    </p>
-                </div>
+            {/* 1. Dynamic Hero Section */}
+            {activeSession ? (
+                // --- ACTIVE SESSION CARD ---
+                <div
+                    className="relative rounded-2xl p-6 text-white shadow-lg overflow-hidden flex flex-col md:flex-row items-center justify-between min-h-[180px] animate-in fade-in slide-in-from-top-4 duration-700"
+                    style={{ background: `linear-gradient(135deg, ${brandColor}, ${brandColor}dd, #0f172a)` }}
+                >
+                    {/* Background Decor */}
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
-                {/* Mascot Slot (Placeholder) */}
-                <div className="hidden md:flex items-center justify-center w-32 h-32 bg-white/10 rounded-full border-2 border-white/20 mr-8 shrink-0 backdrop-blur-sm relative group">
-                    <span className="text-xs font-bold text-white/50 group-hover:text-white/80 transition-colors cursor-default">Mascot Slot</span>
-                    {/* Future 2D Webo Image here */}
+                    <div className="relative z-10 flex-1 text-center md:text-left">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold uppercase tracking-widest mb-3 animate-pulse">
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                            Live Now
+                        </div>
+                        <h1 className="text-3xl font-black mb-1 capitalize tracking-tight">
+                            {(activeSession as any).batch?.name || 'Class Session'}
+                        </h1>
+                        <p className="text-white/80 text-sm font-medium flex items-center justify-center md:justify-start gap-2">
+                            <Activity className="w-4 h-4" />
+                            {activeSession.start_time.slice(0, 5)} - {activeSession.end_time.slice(0, 5)} • {(activeSession as any).batch?.program?.name || 'General'}
+                        </p>
+                    </div>
+
+                    <div className="relative z-10 mt-6 md:mt-0 flex flex-col items-center gap-3">
+                        <Link
+                            to={`/staff/session/${(activeSession as any).id}`}
+                            className="group relative px-8 py-3 bg-white text-slate-900 rounded-xl font-black text-sm uppercase tracking-wide shadow-xl hover:scale-105 transition-all active:scale-95 flex items-center gap-2 overflow-hidden"
+                        >
+                            <span className="relative z-10 flex items-center gap-2">
+                                Enter Class <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-100 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                        </Link>
+                        <span className="text-xs font-medium text-white/60">
+                            {/* Potential: "XX Athletes checked in" */}
+                            Tap to manage attendance
+                        </span>
+                    </div>
                 </div>
-            </div>
+            ) : upcomingSession ? (
+                // --- UPCOMING SESSION CARD ---
+                <div className="bg-white border-l-4 border-emerald-500 rounded-xl p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                    <div className="flex-1 relative z-10">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <CalendarDays className="w-5 h-5 text-emerald-500" />
+                            Up Next Today
+                        </h2>
+                        <h1 className="text-2xl font-black text-slate-900 mt-1">
+                            {(upcomingSession as any).batch?.name}
+                        </h1>
+                        <p className="text-slate-500 text-sm mt-1 font-medium">
+                            Starts at <span className="text-slate-900 font-bold bg-slate-100 px-1 rounded">{upcomingSession.start_time.slice(0, 5)}</span> • {(upcomingSession as any).batch?.program?.name}
+                        </p>
+                    </div>
+
+                    <div className="relative z-10">
+                        <Link
+                            to={`/staff/session/${(upcomingSession as any).id}`} // Or just schedule
+                            className="px-6 py-2.5 bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 rounded-lg font-bold text-sm transition-colors flex items-center gap-2"
+                        >
+                            View Details <ArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+                </div>
+            ) : (
+                // --- EMPTY STATE (Standard Hero) ---
+                <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-lg shadow-emerald-900/10 relative overflow-hidden flex items-center justify-between min-h-[160px]">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                    <div className="relative z-10 max-w-xl">
+                        <h1 className="text-2xl font-bold mb-1">Hello, {profile?.first_name || 'Coach'} 👋</h1>
+                        <p className="text-slate-300 text-sm font-medium opacity-90 leading-relaxed">
+                            You're all caught up! No sessions scheduled for the rest of the day.
+                            Take a moment to review upcoming plans or student progress.
+                        </p>
+                    </div>
+                    {/* Mascot Slot */}
+                    <div className="hidden md:flex items-center justify-center w-32 h-32 bg-white/5 rounded-full border-2 border-white/10 mr-8 shrink-0 backdrop-blur-sm relative group">
+                        <span className="text-3xl">☕</span>
+                    </div>
+                </div>
+            )}
 
             {/* 2. Quick Actions Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

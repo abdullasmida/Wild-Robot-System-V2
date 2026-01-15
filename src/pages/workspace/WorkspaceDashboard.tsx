@@ -103,13 +103,13 @@ const WorkspaceDashboard = () => {
 
             {/* QUICK ACTIONS */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Link to="/workspace/schedule" className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-500 hover:shadow-md transition text-center group">
+                <Link to="/staff/schedule" className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-500 hover:shadow-md transition text-center group">
                     <CalendarDays className="w-6 h-6 mx-auto mb-2 text-slate-400 group-hover:text-emerald-500 transition" />
                     <span className="font-bold text-slate-700 text-sm">Full Schedule</span>
                 </Link>
-                <Link to="/workspace/athletes" className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-500 hover:shadow-md transition text-center group">
+                <Link to="/staff/roster" className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-500 hover:shadow-md transition text-center group">
                     <Users className="w-6 h-6 mx-auto mb-2 text-slate-400 group-hover:text-blue-500 transition" />
-                    <span className="font-bold text-slate-700 text-sm">Full Roster</span>
+                    <span className="font-bold text-slate-700 text-sm">Heroes Roster</span>
                 </Link>
             </div>
         </div>

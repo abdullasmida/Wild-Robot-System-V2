@@ -3,6 +3,7 @@ import { Calendar as CalendarIcon, Search } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import UserAvatar from '../ui/UserAvatar';
 
@@ -94,9 +95,9 @@ export default function SchedulerSidebar({ academyId, staffList = [] }: { academ
                 ) : draggableStaff.length === 0 ? (
                     <div className="p-6 text-center border-2 border-dashed border-slate-200 rounded-xl bg-white">
                         <p className="text-sm text-slate-500 mb-3">No coaches found.</p>
-                        <a href="/owner/staff" className="text-xs font-bold text-white bg-emerald-500 px-3 py-2 rounded-lg hover:bg-emerald-600 transition-colors inline-block">
+                        <Link to="/command/staff" className="text-xs font-bold text-white bg-emerald-500 px-3 py-2 rounded-lg hover:bg-emerald-600 transition-colors inline-block">
                             Add to Directory
-                        </a>
+                        </Link>
                     </div>
                 ) : (
                     draggableStaff.map((coach, index) => (

@@ -78,13 +78,15 @@ const StaffRoster = () => {
                         />
                     </div>
 
-                    <button
-                        onClick={() => setAddModalOpen(true)}
-                        className="bg-emerald-500 text-white px-5 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
-                    >
-                        <UserPlus className="w-4 h-4" />
-                        <span className="hidden md:inline">Add Staff</span>
-                    </button>
+                    {user?.role === 'owner' && (
+                        <button
+                            onClick={() => setAddModalOpen(true)}
+                            className="bg-emerald-500 text-white px-5 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            <span className="hidden md:inline">Add Staff</span>
+                        </button>
+                    )}
                 </div>
             </div>
 

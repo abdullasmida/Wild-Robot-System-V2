@@ -32,6 +32,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useAppStore } from '@/stores/useAppStore';
 import TeamChatWidget from '@/components/chat/TeamChatWidget';
 import AcademySetup from '@/pages/owner/AcademySetup';
+import { SaaSBrandHeader } from '@/components/layout/SaaSBrandHeader';
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -95,23 +96,13 @@ const CommandLayout = () => {
                     isSidebarCollapsed ? "w-20" : "w-72"
                 )}
             >
-                {/* Gold Glow Effect */}
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500" />
-                <div className="absolute -top-20 -left-20 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+                {/* No Glow Effects */}
+                {/* <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500" /> */}
+                {/* <div className="absolute -top-20 -left-20 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" /> */}
 
-                <div className="h-20 flex items-center px-4 border-b border-white/10 relative z-10">
-                    <Link to="/command/dashboard" className="flex items-center gap-3 hover:opacity-90 transition-opacity overflow-hidden">
-                        <div className="w-10 h-10 bg-gradient-to-tr from-emerald-500 to-amber-400 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0">
-                            <Crown className="w-5 h-5 text-white" fill="currentColor" />
-                        </div>
-                        <div className={cn("flex flex-col min-w-0 transition-opacity duration-300", isSidebarCollapsed ? "opacity-0 w-0" : "opacity-100")}>
-                            <span className="font-black text-lg tracking-tight text-white leading-none whitespace-nowrap">
-                                Wild Robot
-                            </span>
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 mt-1 whitespace-nowrap">
-                                Command Center
-                            </span>
-                        </div>
+                <div className="relative z-10">
+                    <Link to="/command/dashboard">
+                        <SaaSBrandHeader />
                     </Link>
 
                     {/* Floating Toggle Button (Edge) */}
@@ -174,26 +165,27 @@ const CommandLayout = () => {
             <div className="flex-1 flex flex-col min-w-0 relative">
 
                 {/* TOP BAR */}
-                <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-4 md:px-6 z-20 sticky top-0">
+                <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-4 md:px-6 z-20 sticky top-0">
                     <div className="flex items-center gap-4">
-                        <button className="md:hidden p-2 text-slate-500" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+
+                        <button className="md:hidden p-2 text-gray-500" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
                             <Menu className="w-5 h-5" />
                         </button>
-                        <div className="hidden md:flex items-center gap-2 text-sm text-slate-500">
+                        <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
                             {/* Academy Name First */}
-                            <div className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-bold">
+                            <div className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded text-gray-700 font-bold">
                                 {academy?.name || 'My Academy'}
                             </div>
 
                             <ChevronRight className="w-4 h-4 opacity-50" />
 
-                            <span className="capitalize hover:text-slate-900 cursor-pointer transition-colors">Command</span>
+                            <span className="capitalize hover:text-gray-900 cursor-pointer transition-colors">Command</span>
 
                             <ChevronRight className="w-4 h-4 opacity-50" />
 
                             {pathSegments.slice(1).map((segment, index) => (
                                 <React.Fragment key={index}>
-                                    <span className={cn("capitalize", index === pathSegments.slice(1).length - 1 && "text-slate-900 font-bold")}>
+                                    <span className={cn("capitalize", index === pathSegments.slice(1).length - 1 && "text-gray-900 font-bold")}>
                                         {segment}
                                     </span>
                                     {index < pathSegments.slice(1).length - 1 && <ChevronRight className="w-4 h-4 opacity-50" />}
@@ -204,17 +196,17 @@ const CommandLayout = () => {
 
                     <div className="flex items-center gap-4">
                         <span className="text-sm font-bold text-emerald-600 hidden md:inline-block">HQ Online</span>
-                        <div className="h-6 w-[1px] bg-slate-200" />
-                        <button onClick={() => setIsNotificationsOpen(true)} className="p-2 text-slate-400 hover:text-slate-900 transition-colors relative">
+                        <div className="h-6 w-[1px] bg-gray-200" />
+                        <button onClick={() => setIsNotificationsOpen(true)} className="p-2 text-gray-400 hover:text-gray-900 transition-colors relative">
                             <Bell className="w-5 h-5" />
                         </button>
-                        <div className="pl-2 border-l border-slate-100">
+                        <div className="pl-2 border-l border-gray-100">
                             <SidebarUserItem theme="light" condensed />
                         </div>
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-auto bg-slate-50 relative p-6">
+                <main className="flex-1 overflow-auto bg-gray-50 relative p-6">
                     <Outlet />
                 </main>
             </div>

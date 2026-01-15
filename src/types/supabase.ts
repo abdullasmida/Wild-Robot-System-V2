@@ -17,6 +17,7 @@ export interface Database {
                     subscription_plan: string
                     owner_id: string
                     logo_url: string | null
+                    brand_color: string | null
                     theme_settings: Json | null
                 }
                 Insert: {
@@ -142,4 +143,3 @@ export interface Database {
             // Add other tables (staff_tasks, timesheets, xp_ledger, wibo_coins_ledger, skills, player_evaluations) as needed with basic types
         }
     }
-
